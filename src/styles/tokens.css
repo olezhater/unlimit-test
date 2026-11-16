@@ -1,0 +1,403 @@
+/* =============================================================================
+   Design tokens
+   -----------------------------------------------------------------------------
+   Values fall into three categories, each flagged inline:
+
+   BASE       — the starting palette and scale, kept unchanged.
+   DERIVED    — new work the base palette does not carry: the status scale, the
+                money scale, the field treatment and the focus ring.
+   CORRECTED  — a base value deliberately overridden, always for a measured
+                accessibility threshold, never for taste. There are exactly four,
+                and they are the only places this file departs from the base:
+                  --ink-secondary   #808080 -> #6A6A6A  (WCAG 1.4.3, text)
+                  --money-void      #808080 -> #6A6A6A  (WCAG 1.4.3, text)
+                  --line-control    #D9D9D9 -> #8F8F8F  (WCAG 1.4.11, controls)
+                  --skeleton-fill   #F2F2F2 -> #8F8F8F  (WCAG 1.4.11, loading)
+                Each carries its measured before-and-after ratios at the token.
+
+   Layer 2 of the canon hierarchy. The spec owns behaviour and copy; this file
+   owns colour, type, spacing, radii, sizes and layer order (z-index);
+   components own layout only.
+   ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------------------
+     Brand — base
+     The accent is a single high-chroma lime used for primary actions, always
+     with black text on top. It is deliberately NOT used to carry status: a
+     colour that also marks the primary button cannot also mean "succeeded",
+     which is why status here is carried by label, icon shape and amount
+     treatment instead of colour.
+     ------------------------------------------------------------------------ */
+  --brand-accent:            #C9F73A;
+  --brand-accent-ink:        #000000;
+
+  /* ---------------------------------------------------------------------------
+     Ink — base
+     Body copy is pure black.
+     ------------------------------------------------------------------------ */
+  --ink-primary:             #000000;
+  /* CORRECTED, deliberate deviation from the base palette.
+     Base:      #808080 — 3.95:1 on --surface-page, 3.78:1 on --surface-subtle,
+                3.46:1 on --surface-info. All three fail the 4.5:1 that body and
+                meta text require (WCAG 1.4.3), and this ink carries the meta
+                line, the day totals and the chip field — the majority of the
+                text on the page.
+     Corrected: #6A6A6A — 5.41:1 on --surface-page, 5.21:1 on --surface-subtle,
+                4.74:1 on --surface-info. Measured from rendered pixels, not
+                computed from the base values. */
+  --ink-secondary:           #6A6A6A;
+  --ink-link:                #346BD7;
+
+  /* ---------------------------------------------------------------------------
+     Surfaces — base
+     ------------------------------------------------------------------------ */
+  --surface-page:            #FFFFFF;
+  --surface-sunken:          #F2F2F2;   /* sidebar */
+  --surface-subtle:          #FAFAFA;   /* table header, hover */
+  --surface-info:            #EBF0FB;   /* selected row fill */
+
+  /* ---------------------------------------------------------------------------
+     Lines — base
+     ------------------------------------------------------------------------ */
+  --line-default:            #E5E5E5;
+  --line-strong:             #D9D9D9;
+  /* EXEMPT from the 3:1 boundary rule (WCAG 1.4.11), by decision.
+     Measured: --line-row #E5E5E5 renders at 1.26:1 on --surface-page, and the
+     day-header rule (--line-strong #D9D9D9) at 1.41:1. Row dividers are
+     decorative separators beside text that carries the meaning — every row
+     is already told apart by its title, amount and 64px rhythm. The 3:1 rule
+     governs control outlines and meaningful boundaries (--line-control,
+     3.23:1), not these. Raised in four reviews; recorded here so it is a
+     decision, not a finding. */
+  --line-row:                #E5E5E5;   /* row separator, 1px hairline */
+  /* CORRECTED, for unfilled controls identified by their outline.
+     Base:      --line-strong #D9D9D9 — 1.41:1 on --surface-page (and
+                --line-default #E5E5E5 — 1.26:1). A border that is the only
+                thing identifying a control needs 3:1 (WCAG 1.4.11).
+     Corrected: #8F8F8F — 3.23:1 on --surface-page.
+     Used by: secondary buttons, filter chips, the "Copied" bubble and the
+     timeline marker — each has no fill of its own to identify it. Fields,
+     selects and the toolbar triggers use --line-field instead (Fields below). */
+  --line-control:            #8F8F8F;
+
+  /* ---------------------------------------------------------------------------
+     Fields — filled, with an outline that identifies them (DERIVED)
+     Text inputs, selects, the search field, the toolbar triggers and the Note
+     field are drawn filled. The fill was meant to identify them on its own,
+     but measured on rendered pixels it reaches only 1.10:1 against the page —
+     far short of the 3:1 that visual information needed to identify a
+     control owes (WCAG 1.4.11) — so it does not carry identification and the
+     outline cannot be decorative. The outline therefore carries it: #8A8A8A
+     clears 3:1 against the page outside it and against the fill inside it.
+     The fill stays as a quieter surface cue. */
+  --surface-field:           #F4F4F5;
+  --surface-field-hover:     #ECECEE;
+  --line-field:              #8A8A8A;   /* the outline that identifies a field */
+  /* MEASURED after the change — rendered pixels, Chromium, deviceScaleFactor 2,
+     PIL relative luminance (WCAG formula), 1440x900:
+       field fill #F4F4F5 vs page #FFFFFF ............... 1.10:1  (fails 3:1 — the fill does not identify the field)
+       field outline #8A8A8A vs page .................... 3.45:1  (needs 3:1 — passes; the identifier)
+       field outline vs field fill ...................... 3.14:1  (passes)
+       field outline vs hover fill #ECECEE .............. 2.93:1  (inner side on hover; the outer edge keeps 3.45:1)
+       search placeholder #6A6A6A vs field fill ......... 4.92:1  (text, needs 4.5:1 — passes)
+       drawer placeholder "From"/"To" #6A6A6A vs field fill ... 4.92:1  (passes)
+       drawer field label #6A6A6A vs page ............... 5.41:1  (passes)
+       focus ring #000000 vs page ........................ 21.00:1 (needs 3:1 — passes)
+       focus ring vs field fill .......................... 19.11:1 (passes); cross-section 2px ring, 2px gap, then the edge
+       highlighted option: fill vs surface .............. 1.10:1  (not the indicator)
+       highlighted option: inset ring #000000 vs surface  21.00:1 (needs 3:1 — passes; the indicator)
+       highlighted option: inset ring vs its fill ....... 19.11:1 (passes)
+       option text #000000 vs highlight fill ............ 19.11:1 (passes)
+       selected checkmark #000000 vs surface ............ 21.00:1 (passes)
+       surface hairline #E5E5E5 vs page tinted by shadow (#F8F8F8) 1.19:1 (decorative; options identify by text) */
+  /* CORRECTED, for the loading skeleton.
+     Base:      --surface-sunken #F2F2F2 — 1.12:1 on --surface-page.
+                During loading the skeleton is the entire screen, so its blocks
+                are the only thing showing what is coming; they are held to the
+                3:1 a graphical object needs (WCAG 1.4.11), not left decorative.
+     Corrected: #8F8F8F — 3.23:1 on --surface-page (sampled 143,143,143 on 255,255,255), measured from
+                rendered pixels. */
+  --skeleton-fill:           #8F8F8F;
+
+  /* ---------------------------------------------------------------------------
+     Status — DERIVED (extension)
+     Four marked statuses need four distinguishable treatments in the row, and
+     Completed's fill is drawn only on the details panel badge — the row leaves
+     Completed unmarked. This scale extends the base palette in its own
+     spirit: low-chroma fills, black text, colour as the last channel
+     after label, icon shape and amount treatment. Each fill is paired with
+     --ink-primary and passes 4.5:1.
+     ------------------------------------------------------------------------ */
+  --status-completed-fill:   #EEFBC9;
+  --status-progress-fill:    #EBF0FB;
+  --status-rejected-fill:    #FBE9E9;
+  --status-cancelled-fill:   #F2F2F2;
+  --status-failed-fill:      #FDF0DC;
+  --status-ink:              #000000;   /* every status label, all five */
+
+  /* ---------------------------------------------------------------------------
+     Avatar lettermarks — DERIVED (extension)
+     logos.fallback: a lettermark on a background chosen deterministically from
+     the counterparty name. Eight pale tints, each paired with --ink-primary.
+     Hues are kept off the five status fills so a lettermark is never read as a
+     status. The lettermark carries no meaning; the colour only helps the eye
+     tell neighbouring rows apart.
+     ------------------------------------------------------------------------ */
+  --avatar-1:                #FDE2CF;
+  --avatar-2:                #E3DAFB;
+  --avatar-3:                #D4EEF7;
+  --avatar-4:                #D9F2E3;
+  --avatar-5:                #FBDCEB;
+  --avatar-6:                #F5ECC8;
+  --avatar-7:                #DCE3F0;
+  --avatar-8:                #E6EDD3;
+  --avatar-ink:              #000000;
+
+  /* ---------------------------------------------------------------------------
+     Money — DERIVED (extension)
+     Incoming and outgoing are distinguished by sign and position, never by
+     colour alone. These are tints, not meaning-bearers.
+     ------------------------------------------------------------------------ */
+  --money-positive:          #1F7A3D;
+  --money-negative:          #000000;
+  /* CORRECTED, same deviation as --ink-secondary.
+     Base:      #808080 — 3.95:1 on --surface-page at 16px/600, under the
+                4.5:1 threshold (16px semibold is not WCAG "large text",
+                which starts at 18.66px semibold).
+     Corrected: #6A6A6A — 5.41:1. A struck amount is still content: the user
+                and support read it. The strike line is a hairline in the amount's own colour
+                (--stroke-hairline, currentColor): 5.41:1 here, above the 3:1 a
+                graphic needs, so it survives greyscale.
+     Scope:     the LIST only. The details panel keeps --ink-primary for a
+                voided amount, because statuses.cancelled.specNote requires full
+                contrast there — the reference and amount are exactly what the
+                user and support need off a cancelled record. Changing this
+                token must not change the panel. */
+  --money-void:              #6A6A6A;   /* strikethrough amounts, list only */
+
+  /* ---------------------------------------------------------------------------
+     Type — base
+     Inter throughout. 14px base, 13px for dense controls and table content,
+     20px/600 page title, 11px uppercase with 1px tracking for eyebrows.
+     ------------------------------------------------------------------------ */
+  --font-family:             Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono:        ui-monospace, "SF Mono", Menlo, monospace;   /* DERIVED — the Transaction ID (character groups
+                                                                             scan and misreads drop) and /states routes */
+
+  --font-size-micro:         11px;   /* uppercase eyebrows: panel section titles */
+  --font-size-caption:       12px;   /* DERIVED — day-header total, one step below the 13px date */
+  --font-size-dense:         13px;   /* controls, table content */
+  --font-size-body:          14px;   /* base */
+  --font-size-lg:            16px;   /* DERIVED — row primary line */
+  --font-size-title:         20px;   /* titles: drawers, empty and error blocks */
+  --font-size-heading-pinned: 18px;  /* DERIVED — the heading pinned: between headline and dense (headingCollapse.pinned) */
+  --font-size-headline:      24px;   /* DERIVED — the page heading at rest (listBehaviour.headingCollapse.rest) */
+  --font-size-display:       28px;   /* DERIVED — details panel amount */
+
+  --font-weight-regular:     400;
+  --font-weight-medium:      500;
+  --font-weight-semibold:    600;
+
+  --line-height-tight:       1.2;
+  --line-height-base:        1.45;
+
+  --letter-spacing-micro:    1px;    /* pairs with --font-size-micro, uppercase eyebrows only */
+
+  /* ---------------------------------------------------------------------------
+     Radii — base
+     ------------------------------------------------------------------------ */
+  --radius-control:          4px;
+  --radius-pill:             999px;
+  --radius-surface:          8px;    /* DERIVED — details panel, empty-state card */
+
+  /* ---------------------------------------------------------------------------
+     Spacing — 4px grid
+     ------------------------------------------------------------------------ */
+  --space-0-5:               2px;   /* DERIVED — sub-grid micro gap: badge padding */
+  --space-1:                 4px;
+  --space-2:                 8px;
+  --space-3:                 12px;
+  --space-4:                 16px;
+  --space-5:                 24px;
+  --space-6:                 32px;
+  --space-7:                 48px;
+
+  /* ---------------------------------------------------------------------------
+     Sizing
+     The base control heights are kept. The row height is not a base value: a
+     dense back-office table would use 36px rows, but this is a consumer
+     account, and the spec sets 64px two-line rows (meta.layout.densityNote) —
+     a deliberate choice, recorded here so it reads as a decision rather than a
+     drift.
+     ------------------------------------------------------------------------ */
+  /* DERIVED — the one stroke heavier than a hairline: the timeline's step
+     markers, which must read as drawn marks rather than borders. */
+  --stroke-strong:           2px;
+  /* DERIVED — the strike through a voided amount: a hairline in the amount's
+     own colour, so the mark reads as part of the figure, not a rule over it. */
+  --stroke-hairline:         1px;
+
+  --hit-target:              44px;   /* DERIVED — WCAG 2.5.5: the minimum pointer target around an icon-only control */
+  --control-height-sm:       32px;   /* base — the panel close control, dropdown options, the logo mark */
+  --control-height-md:       40px;   /* base — header controls, filter inputs */
+  --row-height:              64px;   /* DERIVED — retail density, see note above */
+  --avatar-size:             40px;
+  /* DERIVED — icon sizes for the vendored Lucide set (src/icons), drawn on a
+     24px grid: lg is the grid itself, md and sm its standard steps down. xs
+     (12px) is for exactly two slots: the direction glyph inside the 16px
+     avatar badge, which sm would fill edge to edge, and the remove control
+     inside a filter chip, where a 16px x crowds the chip text. Nothing else
+     uses it. */
+  --icon-size-xs:            12px;
+  --icon-size-sm:            16px;
+  --icon-size-md:            20px;
+  --icon-size-lg:            24px;
+  /* DERIVED — icon stroke, in 24-grid units (unitless, an SVG stroke-width).
+     Lucide's own 2 at md and lg; 1.5 at sm and xs, where 2 reads heavy. */
+  --icon-stroke:             2;
+  --icon-stroke-sm:          1.5;
+  /* DERIVED — longest comfortable line for panel prose once Full width
+     widens the column (84 characters measured at 1920 without it). */
+  --measure:                 70ch;
+  /* Component widths that were inline values — moved here unchanged (rule 3). */
+  --input-min-width:         88px;    /* a filter input never narrower than a short amount */
+  --chip-max-width:          320px;   /* a long chip ellipsises its value, not the row */
+  --block-state-max-width:   420px;   /* empty, no-results and error blocks: a readable measure */
+  --states-index-name-width: 220px;   /* States index: the state-name column */
+  /* Loading skeleton blocks, sized to typical rendered text so the skeleton
+     mirrors the real layout (states.loading). */
+  --skeleton-width-title:    180px;
+  --skeleton-width-meta:     240px;
+  --skeleton-width-amount:   96px;
+  --skeleton-width-heading:  72px;
+  --skeleton-width-total:    104px;
+  /* The Note field (states.details sections[note]): opens at two lines and
+     grows with its text to about six lines of --font-size-dense at
+     --line-height-base, plus its padding, then scrolls inside itself. DERIVED. */
+  --note-min-height:          60px;
+  --note-max-height:          136px;
+  /* DERIVED, measured: search.placeholder at --font-size-dense renders 233px
+     wide; plus the leading search glyph (--space-3 + --icon-size-sm +
+     --space-2 = 36px), --space-3 trailing padding and the 1px borders: 283,
+     rounded up to the 4px grid. Below this the placeholder clips. */
+  --search-min-width:        284px;
+  --panel-width:             480px;   /* meta.layout.panelWidth */
+  --sidebar-width:           240px;   /* meta.layout.sidebarWidth */
+  --filters-drawer-width:    400px;   /* DERIVED — filtersDrawer */
+  --list-min-width:          640px;   /* meta.layout.listWidth — "fluid, min 640" */
+  --content-max-width:       1400px;  /* the /states index page only; the product fills the frame */
+
+  /* ---------------------------------------------------------------------------
+     Elevation — DERIVED
+     The base palette has no shadow scale. The persistent panel column
+     sits in the grid and casts nothing. The drawers (meta.layout.panelModes.
+     drawer, filtersDrawer) cast --shadow-drawer over a --scrim.
+     ------------------------------------------------------------------------ */
+  /* DERIVED — meta.layout.panelModes.drawer and filtersDrawer: an
+     overlay drawer over the content, its scrim behind it. */
+  --shadow-drawer:           -8px 0 32px rgb(0 0 0 / 16%);
+  --scrim:                   rgb(0 0 0 / 40%);
+
+  /* ---------------------------------------------------------------------------
+     Motion — DERIVED
+     Two durations: drawers sliding in with the scrim fading, and the heading
+     collapsing on scroll. Both removed under prefers-reduced-motion.
+     ------------------------------------------------------------------------ */
+  /* DERIVED — the heading collapsing on scroll (listBehaviour.headingCollapse.motion). */
+  --motion-heading:          160ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-drawer:           200ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---------------------------------------------------------------------------
+     Focus — DERIVED
+     One ring, one colour: a 2px line in --focus-color with a 2px offset, so it
+     sits clear of the control instead of thickening its edge. Lime is the
+     action colour and is not spent on focus: one colour, one job. The ring
+     must reach 3:1 against both the control and the page — measured in the
+     MEASURED block. */
+  --focus-color:             var(--ink-primary);
+  --focus-width:             2px;
+  --focus-offset:            2px;
+  /* Drawn inside the element, for rows that sit directly under a sticky day
+     header, which would cover an outset ring's upper half. */
+  --focus-ring-inset:        inset 0 0 0 var(--focus-width) var(--focus-color);
+
+  /* ---------------------------------------------------------------------------
+     Dropdowns — one visual language (spec `dropdowns`), DERIVED
+     The account dropdown, the toolbar Date dropdown and the counterparty field share
+     every value below; nothing about their look is set per control.
+     ------------------------------------------------------------------------ */
+  --dd-trigger-height:        var(--control-height-md);
+  --dd-trigger-padding-start: var(--space-3);
+  --dd-trigger-padding-end:   var(--space-2);
+  --dd-trigger-weight:        var(--font-weight-regular);
+  --dd-font-size:             var(--font-size-dense);
+  --dd-gap:                   var(--space-2);
+  --dd-offset:                var(--space-2);   /* trigger to surface: clears the trigger focus ring (4px) by 4px */
+  --dd-surface-padding:       var(--space-1);
+  --dd-max-height:            240px;            /* about seven single-line options, then it scrolls;
+                                                   keep a px literal — the combobox reads it to fit the drawer */
+  --dd-option-height:         var(--control-height-sm);
+  --dd-option-padding-y:      var(--space-1);
+  --dd-option-padding-x:      var(--space-2);
+  --dd-option-gap:            var(--space-0-5);
+  /* A surface above the page, not a card floating over it: a hairline and a
+     soft, short shadow. */
+  --shadow-dropdown:          0 2px 8px rgb(0 0 0 / 6%);
+  --motion-dropdown:          120ms cubic-bezier(0.2, 0, 0, 1);
+  /* The surface's hairline. Not a control boundary — the options inside are
+     identified by their text — so the 3:1 rule does not bind it. */
+  --line-surface:             var(--line-default);
+
+  /* ---------------------------------------------------------------------------
+     The page heading (listBehaviour.headingCollapse), DERIVED
+     One box height in both states, so the list never jumps when it pins: the
+     row (one control height) plus the resting gap. Pinned, the box sits
+     (rest gap − pinned gap) above the scroll edge and the row moves down by the
+     same amount, leaving a band of row + pinned gap.
+     ------------------------------------------------------------------------ */
+  --appbar-gap-rest:          var(--space-4);
+  --appbar-gap-pinned:        0px;   /* pinned, heading and search read as one band */
+  --appbar-pinned-height:     calc(var(--control-height-md) + var(--appbar-gap-pinned));
+
+  /* Layer order — every z-index in the app is one of these, lowest first.
+     Within the product: an in-flow mark lifted over its own connector, the
+     dropdown surfaces over stub notices, the pinned day header, the pinned
+     toolbar above it, then the overlay layer (drawers and scrims), which is
+     confined to the application frame. --z-prototype-bar is the top layer:
+     the prototype controls bar is scaffolding and always sits above every
+     product layer, never beneath one. */
+  --z-raised:                1;    /* timeline marker over its connector */
+  --z-notice:                1;    /* a stub notice, below its panel action */
+  --z-day-header:            10;   /* sticky day header */
+  --z-listbar:               20;   /* sticky toolbar and chips */
+  --z-appbar:                22;   /* the collapsed page heading, above the toolbar it pins over */
+  /* --z-header-notice and --z-dropdown, used by the header row's notice and the account
+     list, resolve inside --z-appbar's context: they need only beat their siblings there. */
+  --z-header-notice:         25;   /* the header's stub notice, over the sticky toolbar below it */
+  --z-dropdown:              30;   /* every dropdown surface, above the sticky toolbar */
+  --z-overlay:               100;  /* drawers and scrims, frame only */
+  --z-prototype-bar:         1000; /* the prototype controls bar — top; the one
+                                      scaffolding layer, kept here so the whole
+                                      order reads in one place */
+
+  /* ===========================================================================
+     PROTOTYPE CHROME — NOT PRODUCT
+     ---------------------------------------------------------------------------
+     Scaffolding for prototypeAffordances only: the reviewer bar above the
+     application frame. Deliberately unlike the product — a dark surface where
+     the product is white, smaller type, its own controls — so it can never be
+     read as part of the UI under review. No product component may use these,
+     and the bar may use no product component.
+     Contrast, measured from the rendered bar: --proto-ink on --proto-surface
+     16.97:1; --proto-ink-muted on --proto-surface 6.91:1; an inactive width
+     button (--proto-ink on --proto-surface-raised) 14.27:1; the active button
+     inverts the first pair, 16.97:1. All clear 4.5:1 at the 12px bar size.
+     ======================================================================== */
+  --proto-surface:           #18181B;
+  --proto-surface-raised:    #27272A;
+  --proto-line:              #52525B;
+  --proto-ink:               #FAFAFA;
+  --proto-ink-muted:         #A1A1AA;
+  --proto-font-size:         12px;
+}
