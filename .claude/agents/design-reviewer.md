@@ -59,13 +59,14 @@ opinions go in *What's missing* as a question, not in *What to fix*.
   added on top. tx_1004 is −251.20 with the recipient getting 250.00.
 - **`fxModel`** on tx_1003: target primary and positive, source grey and negative below in
   the row; the **five** `detailsBreakdown` lines in that order, in that wording, plus
-  `Rate locked at {rateLockedAt}`. `fxModel.arithmetic` must hold on screen.
+  the `fieldLabels.rateLockedAt` row carrying the fixture's `rateLockedAt`. `fxModel.arithmetic` must hold on screen.
 - **Per-status detail contract** for all five: `detailHelperText` — with
   `detailHelperFallback` where the fixture lacks the templated field, and a fixture's own
   `reason` replacing it entirely where `reasonOverride` is set (tx_1005; the two never render
   together, `qaChecklist[8]`) — `timeline.steps` with
-  `currentStep` / `completedSteps` / `terminalStep`, `primaryAction` and `secondaryAction` —
-  where either is `null` the control is **absent**, not disabled or greyed.
+  `currentStep` / `completedSteps` / `terminalStep`, `primaryAction`, `secondaryAction` and
+  `repeat` — where any is `null` the control is **absent**, not disabled or greyed. `repeat`
+  is Repeat's standing under `repeatAction.prominence`: at most one primary button per panel.
 - **Filters and search**: every `filters[]` entry with the right `control` and the exact
   `options`/`presets`; `search.placeholder` verbatim, 250ms debounce, and search producing a
   removable chip like any other filter. Every chip's text comes from a `filterChips` template —
@@ -89,7 +90,7 @@ opinions go in *What's missing* as a question, not in *What to fix*.
   In persistent mode selecting a transaction changes no column width and re-truncates no row,
   and the column always holds a visible transaction, with no close control
   (`states.list.defaultSelection.wide`); with nothing visible it collapses (`noResults`). Filters sit in the
-  `filtersDrawer` (draft, Apply, Reset); avatars follow `logos` and `edgeCases.no_logo`.
+  `filtersDrawer` (draft, Apply, Clear all); avatars follow `logos` and `edgeCases.no_logo`.
 - **No invented data** (`fixtures[]` only). Extra rows, made-up IBANs, references or rates are
   defects. A fixture missing a field the UI needs is a *What's missing* question, never a value
   you accept as filled in.
@@ -126,7 +127,7 @@ reconciliation table. At a glance the user must read, in this order: **who**, **
 ### 4. Information hierarchy — the panel
 
 - The pinned header carries avatar, amount, status badge, counterparty and the status block
-  (timeline accordion, no heading, no separate date); the scrolling body
+  (timeline accordion, no heading, no separate date) with the helper line directly beneath it; the scrolling body
   carries the `states.details.sections[]` entries whose `renderWhen` applies, in that order —
   Note last, its own section on every transaction — and the actions sit in a footer
   pinned to the panel's bottom edge, outside the scroll. A section that does not apply is omitted, never rendered as an empty
@@ -147,7 +148,8 @@ reconciliation table. At a glance the user must read, in this order: **who**, **
 - The reference is a Details row like the others and wraps in full beside its copy control (an
   icon-only control with a 44px hit area, `copyableFields.control`); it is not visually demoted — it is the
   value people paste into support tickets.
-- Actions sit last and the primary action is visually primary.
+- Actions sit last; at most one is visually primary, and it is the one the status recommends
+  (`repeatAction.prominence`). A status with no recommended action shows no primary button.
 
 ### 5. Status differentiation — all four channels
 

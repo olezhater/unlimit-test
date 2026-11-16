@@ -6,17 +6,19 @@
  * drawer the close control — then the amount, the counterparty and the status
  * block (timeline accordion, no heading, no separate date). The scrolling body
  * renders the entries of states.details.sections[] that apply — Amount
- * breakdown, Details (sections.details.fields: up to six copyable fields),
+ * breakdown, Details (sections.details.fields, six of them copyable),
  * then Note. The actions are a footer pinned below the body: the status's
  * primaryAction, Repeat (repeatAction) and secondaryAction — each a stub
  * (prototypeAffordances.stubRule). Cancelled
  * keeps full contrast (its specNote).
  *
- * Copy controls only on states.details.copyableFields — values people transcribe
- * (From, To, payment reference, counterparty name, account number and
- * Transaction ID) —
- * permanently visible. Their names fill copy.copyField with the fieldLabels
- * label in lower case (copy.copyFieldCase).
+ * Copy controls only where states.details.copyableFields.rule gives one —
+ * values people transcribe: payment reference, recipient or sender, IBAN and
+ * Transaction ID copy what the row shows; From and To always carry one, copying
+ * the IBAN of the party they name where there is one and the displayed value
+ * where there is not (ibanRule) — permanently visible. Each name says what it
+ * copies: copy.copyIban when it copies an IBAN, copy.copyField otherwise, with
+ * the fieldLabels label in lower case (copy.copyFieldCase).
  *
  * One component, two modes (meta.layout.panelModes):
  *   column  1440px and above — a persistent column beside the list that always
@@ -32,6 +34,7 @@ import {
   type Fixture,
   accountById,
   childFeeTotal,
+  hasThirdParty,
   isConversion,
   statusById,
   titleOf,
@@ -39,7 +42,7 @@ import {
 import { dateTime, signedMoney } from "../lib/format.ts";
 import { primaryAmount } from "../lib/data.ts";
 import {
-  COPYABLE_FIELDS,
+  COPIES,
   DETAILS_COPY,
   FIELD_LABELS,
   REPEAT_ACTION,
@@ -63,11 +66,8 @@ const DETAIL_FIELDS: string[] =
       { fields?: string[] } | undefined
   )?.fields ?? [];
 
-/** states.details.copyableFields — the fieldLabels keys that carry a copy control. */
-const COPYABLE = new Set(COPYABLE_FIELDS.map((entry) => entry.field));
-
 /** copy.copyFieldCase — lower case, except a word written wholly in capitals. */
-function copyLabel(label: string): string {
+function copyLabel(label: string, template: string): string {
   const words = label
     .split(" ")
     .map((word) =>
@@ -75,7 +75,7 @@ function copyLabel(label: string): string {
         ? word
         : word.toLowerCase(),
     );
-  return fill(DETAILS_COPY.copyField, { label: words.join(" ") });
+  return fill(template, { label: words.join(" ") });
 }
 
 export type PanelMode = "column" | "drawer";
@@ -116,27 +116,28 @@ const RENDER_WHEN: Record<string, (tx: Fixture) => boolean> = {
     (tx.fee ?? 0) > 0 || childFeeTotal(tx) !== null || isConversion(tx),
   // "always — every transaction has at least From and Transaction ID"
   details: (tx) => detailRows(tx).length > 0,
-  // "always — Note renders empty, as an invitation to write one"
+  // always, on every transaction; empty only where there is no note
   note: () => true,
 };
 
-/** "a third party: not for between_accounts, not for an account-level fee" */
-function hasThirdParty(tx: Fixture): boolean {
-  return (
-    tx.type !== "between_accounts" &&
-    !(tx.type === "fee" && !tx.parentId) &&
-    Boolean(tx.counterparty)
-  );
-}
-
 /**
  * The Details section's rows: states.details.sections.details.fields, in that
- * order, each only where the transaction has it. No fixture carries a bank
- * name, so that field is not among them rather than invented.
+ * order, each only where the transaction has it. No Date and time row: the
+ * header's status block carries it (sections[details].dateTimeInHeader). The
+ * recipient details (name, IBAN, bank) only for a third party and
+ * only where the fixture carries the value.
  */
 function detailRows(
   tx: Fixture,
-): { key: string; value: string; wrap?: boolean; mono?: boolean }[] {
+): {
+  key: string;
+  value: string;
+  copy?: string;
+  /** The control copies an IBAN, not the value shown: its name says so. */
+  copiesIban?: boolean;
+  wrap?: boolean;
+  mono?: boolean;
+}[] {
   const name = titleOf(tx);
   const debit = accountById.get(tx.account)?.label;
   const credit = tx.targetAccount
@@ -149,6 +150,18 @@ function detailRows(
     ? debit
     : (credit ?? (tx.type === "fee" ? undefined : name));
   const third = hasThirdParty(tx);
+  // copyableFields.ibanRule — From and To copy the IBAN of the party they
+  // name where one is on record (the user's own accounts always have one; a
+  // third party only where the fixture carries it), else the displayed value.
+  const debitIban = accountById.get(tx.account)?.iban;
+  const creditIban = tx.targetAccount
+    ? accountById.get(tx.targetAccount)?.iban
+    : undefined;
+  const theirIban = third ? tx.counterparty?.iban : undefined;
+  const ibans: Record<string, string | undefined> = {
+    fromAccount: incoming ? theirIban : debitIban,
+    toAccount: incoming ? debitIban : (creditIban ?? theirIban),
+  };
   const values: Record<
     string,
     { value?: string; wrap?: boolean; mono?: boolean }
@@ -162,6 +175,10 @@ function detailRows(
       value: third ? tx.counterparty?.iban : undefined,
       wrap: true,
     },
+    counterpartyBank: {
+      value: third ? tx.counterparty?.bank : undefined,
+      wrap: true,
+    },
   };
   return DETAIL_FIELDS.flatMap((key) =>
     values[key]?.value
@@ -169,6 +186,15 @@ function detailRows(
           {
             key,
             value: values[key].value as string,
+            // copyableFields.copies — the row's own value, the IBAN behind
+            // it, or nothing.
+            copy:
+              COPIES[key] === "value"
+                ? (values[key].value as string)
+                : COPIES[key] === "iban"
+                  ? (ibans[key] ?? (values[key].value as string))
+                  : undefined,
+            copiesIban: COPIES[key] === "iban" && Boolean(ibans[key]),
             wrap: values[key].wrap,
             mono: values[key].mono,
           },
@@ -209,7 +235,7 @@ function helperText(
       (m) => values[m[1]] !== undefined,
     );
 
-  if (needs(status.detailHelperText))
+  if (status.detailHelperText && needs(status.detailHelperText))
     return fill(status.detailHelperText, values);
   if (status.detailHelperFallback && needs(status.detailHelperFallback)) {
     return fill(status.detailHelperFallback, values);
@@ -236,15 +262,21 @@ function Field({
   id,
   labelKey,
   value,
+  copyText,
+  copiesIban,
   wrap,
   mono,
   copiedId,
   onCopy,
 }: {
   id: string;
-  /** The fieldLabels key; it names the field and decides whether it copies. */
+  /** The fieldLabels key; it names the field. */
   labelKey: string;
   value: string;
+  /** What the copy control copies; absent, the row has no control. */
+  copyText?: string;
+  /** The control copies an IBAN rather than the value shown. */
+  copiesIban?: boolean;
   wrap?: boolean;
   /** Transaction ID: monospaced, one line, never wrapping. */
   mono?: boolean;
@@ -258,11 +290,14 @@ function Field({
       <dd className={mono ? "fields__mono" : wrap ? "fields__wrap" : undefined}>
         {value}
       </dd>
-      {COPYABLE.has(labelKey) ? (
+      {copyText ? (
         <CopyButton
           id={id}
-          text={value}
-          label={copyLabel(label)}
+          text={copyText}
+          label={copyLabel(
+            label,
+            copiesIban ? DETAILS_COPY.copyIban : DETAILS_COPY.copyField,
+          )}
           copiedId={copiedId}
           onCopy={onCopy}
         />
@@ -295,8 +330,10 @@ export function DetailsPanel({
   const { value, currency } = primaryAmount(tx);
   const helper = helperText(tx, status);
   const counterpartyName = titleOf(tx);
-  /* states.details.repeatAction — every transaction except incoming. */
-  const repeatable = tx.type !== "incoming";
+  /* states.details.repeatAction — outgoing payments only, with the standing
+     the status gives it (prominence): primary, secondary, or none at all. */
+  const repeat = tx.type === "outgoing" ? status.repeat : null;
+  const repeatable = repeat !== null;
 
   const onCopy: CopyHandler = async (id, text) => {
     try {
@@ -349,12 +386,13 @@ export function DetailsPanel({
             header carries no separate date line. */}
         <div className="panel__status">
           <Timeline key={tx.id} tx={tx} status={status} />
+          {/* states.details.behaviour — the helper line sits directly beneath
+              the status block, in the pinned header, so the two stay together. */}
+          {helper ? <p className="panel__helper">{helper}</p> : null}
         </div>
       </header>
 
       <div className="panel__body">
-        {helper ? <p className="panel__helper">{helper}</p> : null}
-
         {SECTIONS.filter((section) => RENDER_WHEN[section.id]?.(tx)).map(
           (section) =>
             section.id === "note" ? (
@@ -375,6 +413,8 @@ export function DetailsPanel({
                         id={`detail-${row.key}`}
                         labelKey={row.key}
                         value={row.value}
+                        copyText={row.copy}
+                        copiesIban={row.copiesIban}
                         wrap={row.wrap}
                         mono={row.mono}
                         {...copy}
@@ -389,7 +429,7 @@ export function DetailsPanel({
 
       {/* A footer pinned to the panel's bottom edge, outside the scroll
           (states.details.behaviour): the status's primaryAction, then Repeat
-          (repeatAction.order) — the primary button when the status has none —
+          (repeatAction.order) in the standing statuses[].repeat gives it,
           then secondaryAction. */}
       {status.primaryAction || repeatable || status.secondaryAction ? (
         <div className="panel__actions" key={tx.id}>
@@ -399,7 +439,7 @@ export function DetailsPanel({
           {repeatable ? (
             <StubButton
               label={REPEAT_ACTION.label}
-              primary={!status.primaryAction}
+              primary={repeat === "primary"}
             />
           ) : null}
           {status.secondaryAction ? (

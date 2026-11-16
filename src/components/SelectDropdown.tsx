@@ -135,7 +135,6 @@ export function SelectDropdown({
               aria-selected={index === selectedIndex}
               data-active={index === active || undefined}
               onMouseDown={(event) => event.preventDefault()}
-              onMouseEnter={() => setActive(index)}
               onClick={() => choose(index)}
             >
               <DropdownOptionContent label={option.label} selected={index === selectedIndex} />

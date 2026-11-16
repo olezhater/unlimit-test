@@ -84,6 +84,9 @@ Four behaviours cut across routes and must be checked wherever they apply:
   option from every scope; under each single-account scope the day headers match
   `expectedDayTotals.scoped[<account>]`, and under each single-currency filter they match
   `expectedDayTotals.currencyFiltered[<currency>]` — a conversion counting only its matching leg.
+  Then load `?account=<id>&currency=<code>` for each key of
+  `expectedDayTotals.scopedAndCurrencyFiltered` and check the headers the same way; `{}` means
+  no row, no header and the no-results block — one leg must pass both (`qaChecklist[76]`).
 - **Selection** (`states.list.defaultSelection`): at 1440+ the column always holds a visible
   transaction — the newest on load, the newest remaining when the selection is filtered or
   searched away. Below 1440 nothing is selected on load and the drawer closes when its
@@ -100,7 +103,8 @@ Four behaviours cut across routes and must be checked wherever they apply:
 1. Open `states[].route` in a fresh tab.
 2. Confirm the state named by `id` is what rendered — check against `behaviour`, not vibes.
    `loading` must show the skeleton described in `states.loading.behaviour` (two day groups of
-   three rows, skeleton group headers, no spinner, held ≥300ms). `error` must keep the page
+   three rows, skeleton group headers, no spinner, held ≥300ms; at 1440+ the panel column stays
+   reserved and the skeleton fills the list column only). `error` must keep the page
    frame, account scope dropdown and toolbar rendered and replace only the list region.
 3. Diff every visible string against that state's `copy` object.
 4. `filters_active`: confirm each active filter is a chip showing field and value
@@ -109,16 +113,21 @@ Four behaviours cut across routes and must be checked wherever they apply:
    filtered set (`qaChecklist[6]`; under a currency filter `qaChecklist[31]`).
    Open the Filters drawer and confirm every control has a valid resting state
    (`qaChecklist[34]`): Date on "All", Amount showing its "From" and "To" placeholders, Recipient or
-   sender on "All" — and that Reset returns them there. Walk the counterparty combobox by
-   keyboard alone (`qaChecklist[35]`): Down/Up, Enter, Escape (list closes, drawer stays),
-   Tab; no browser autofill list.
+   sender on "All" — and that the drawer's Clear all returns them there. Walk the counterparty combobox by
+   keyboard alone (`qaChecklist[35]`): Down/Up, Enter, Escape (list closes, drawer stays, the
+   previous value returns), Tab (commits the highlighted option, or the typed text when nothing
+   is highlighted — `filters.counterparty.openBehaviour`); no browser autofill list. Then, after
+   typing, rest the pointer on another option and press Tab or Enter: the keyboard highlight (or
+   the typed text) is committed, never the hovered option, and `aria-activedescendant` does not
+   change on hover — in all three dropdowns (`qaChecklist[74]`). Every option is one line with
+   its full value in `title` (`qaChecklist[75]`).
 5. `details`: confirm the body renders the `states.details.sections[]` entries whose
    `renderWhen` applies — in that order, and only those (`sectionsRule`: section count varies
    by transaction by design). Confirm that the pinned header carries avatar, amount, status badge, counterparty and the
-   status block (no heading, no separate date; collapsed it is a plain line with "More"), and that
-   Details holds the `sections[details].fields` the transaction has (Transaction ID last), as rows, each with a 44px copy
+   status block (no heading, no separate date; collapsed it is the step label with its date and time on the line beneath, then "More"), and that
+   Details holds the `sections[details].fields` the transaction has (no Date and time row — the header's status block carries it, `sections[details].dateTimeInHeader`; Transaction ID last), as rows, the `copyableFields` ones each with a 44px copy
    control; Note follows as its own section on every transaction (heading naming a full-width filled field), and the
-   actions sit in a footer pinned to the panel's bottom edge at 1440 and in the 1280 drawer. Repeat (`repeatAction`) shows on every non-incoming transaction and shows the stub notice. At a frame of
+   actions sit in a footer pinned to the panel's bottom edge at 1440 and in the 1280 drawer. Repeat (`repeatAction`) shows on outgoing payments only, in the standing `statuses[].repeat` gives it (absent on In progress), and shows the stub notice. At a frame of
    1440px and above, confirm the column has no close control, Escape and outside clicks leave
    it filled, and swapping a transaction changes no column width and re-truncates no row. Below 1440px, confirm no
    panel on load, and that a row click opens the drawer with a scrim, closed by Escape, the
@@ -142,9 +151,10 @@ panel. For each:
    `currentStep` / `completedSteps` / `terminalStep` as given, rendered with the per-type
    labels of `timelineRules.steps`, the accordion open by default for every status except
    Completed (`timelineRules.expandedByDefault`), the helper suppressed where `showWhen` is
-   `never`, one copy control per `copyableFields` entry present and none on any other field (`qaChecklist[28]`), and permanently visible, and that `primaryAction` and
-   `secondaryAction` match — including `null`, which means the control is absent, not disabled.
-4. Confirm all four `statusDifferentiation.channels` are present for that status.
+   `never`, one copy control on each row `copyableFields.rule` gives one and none on any other (`qaChecklist[28]`: From and To always carry one, copying the IBAN where there is one and the displayed value where there is not, its name saying which — `copyableFields.ibanRule`), permanently visible, the helper line directly beneath the status block in the pinned header, and that `primaryAction`,
+   `secondaryAction` and `repeat` match — `null` means the control is absent, not disabled, and `repeat` sets whether Repeat is the primary or a secondary button (`repeatAction.prominence`).
+4. Confirm the `statusDifferentiation.channels` that apply to that status: icon and label on the
+   four marked statuses and neither on Completed, the amount treatment on all five.
 
 **Pass C — `edgeCases[]` (5 entries).** For each, open `/?tx=<edgeCases[].fixture>` and check
 the `rule` on both surfaces:
@@ -175,7 +185,7 @@ describes the panel and is not a source of labels.
 | Spec entry            | Array      | Route              | Covered | Note                     |
 |-----------------------|------------|--------------------|---------|--------------------------|
 | filters_no_results    | states     | /?status=rejected&currency=USD | yes | chips visible, copy exact |
-| completed             | statuses   | /?tx=tx_1001       | no      | detailHelperText renders raw {deliveredAt} |
+| in_progress           | statuses   | /?tx=tx_1002       | no      | detailHelperText renders raw {expectedBy} |
 ```
 
 `Covered` is `yes` or `no` only. A check you could not run is `no` with the reason in the
@@ -193,7 +203,7 @@ it a gate. The two states differ on three axes, and all three are required:
 | Filter chips | none | **all active chips visible above the block** |
 | Headline | `No transactions yet` | `No transactions match your filters` |
 | Body | `When you send or receive money, it will show up here.` | `Try a different date range, or clear some filters to see more.` |
-| Primary action | `Make a transfer` | `Clear all filters` |
+| Primary action | `Make a transfer` | `Clear all` |
 
 **How to check it.** Not by reading the code — by comparing the two renders:
 

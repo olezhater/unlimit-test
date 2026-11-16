@@ -66,7 +66,7 @@ placeholders, helper text, breakdown row labels, timeline step names, and empty/
 
 Templated strings keep their placeholders in the spec and are interpolated in code:
 `"{n} of {total} transactions"`, `"incl. {amount} {currency} fee"`,
-`"Delivered on {deliveredAt}"`, `"Rate locked at {rateLockedAt}"`,
+`"Expected by {expectedBy}."`, `"Cancelled on {cancelledAt}. No money left your account."`,
 `"1 {sourceCurrency} = {rate} {targetCurrency}"`. The template text stays in the spec — code
 substitutes values, it never rewrites the sentence.
 

@@ -16,6 +16,8 @@ interface Counterparty {
   initials?: string;
   glyph?: string;
   iban?: string;
+  /** The counterparty's bank, where the fixture records one (fieldLabels.counterpartyBank). */
+  bank?: string;
   /** logos.field — empty when there is no recognisable merchant. */
   merchantDomain?: string;
 }
@@ -70,13 +72,16 @@ export interface Status {
     /** false: the row draws no status mark at all (Completed, statuses[1].specNote). */
     markVisible?: boolean;
   };
-  detailHelperText: string;
+  /** null: the status carries no helper line (Completed). */
+  detailHelperText: string | null;
   /** 'never' suppresses the helper line; 'adds-information' renders it. */
   showWhen?: 'adds-information' | 'never';
   detailHelperFallback?: string;
   reasonOverride?: boolean;
   primaryAction: string | null;
   secondaryAction: string | null;
+  /** Repeat's standing under repeatAction.prominence; null: no Repeat at all. */
+  repeat: 'primary' | 'secondary' | null;
   timeline: {
     steps: string[];
     currentStep: number;
@@ -237,7 +242,7 @@ export function isConversion(tx: Fixture): boolean {
 }
 
 /** Every currency a transaction touches — used by the currency filter and day totals. */
-export function currenciesOf(tx: Fixture): string[] {
+function currenciesOf(tx: Fixture): string[] {
   const list = [tx.currency, tx.sourceCurrency, tx.targetCurrency].filter(
     (c): c is string => Boolean(c),
   );
@@ -271,9 +276,26 @@ function optionsOf<T extends { label: string }>(filterId: string, entries: reado
 export const statusOptions = optionsOf('status', spec.statuses);
 export const typeOptions = optionsOf('type', spec.transactionTypes);
 
-/** Counterparty typeahead suggestions, from the fixtures only. */
+/**
+ * A transaction with a recipient or sender: not a conversion between the
+ * user's own accounts, not an account-level fee (sections.details.layout).
+ */
+export function hasThirdParty(tx: Fixture): boolean {
+  return (
+    tx.type !== 'between_accounts' &&
+    !(tx.type === 'fee' && !tx.parentId) &&
+    Boolean(tx.counterparty)
+  );
+}
+
+/** filters.counterparty.listNote — third parties only, from the fixtures. */
 export const counterpartyOptions = [
-  ...new Set(topLevelFixtures.map((f) => f.counterparty?.name).filter((n): n is string => Boolean(n))),
+  ...new Set(
+    topLevelFixtures
+      .filter(hasThirdParty)
+      .map((f) => f.counterparty?.name)
+      .filter((n): n is string => Boolean(n)),
+  ),
 ].sort();
 
 /** The first fixture carrying each status — gives /states a route per status. */

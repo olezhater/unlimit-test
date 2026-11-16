@@ -3,7 +3,7 @@
  * filters[] order. Search stays in the toolbar.
  *
  * The drawer edits a draft. Apply writes the draft to the URL and closes;
- * Reset clears every field of the draft and stays open; Escape, the close
+ * Clear all (filtersDrawer.reset) clears every field of the draft and stays open; Escape, the close
  * control or the scrim close it and discard the draft.
  *
  * Options are derived from the spec: currencies from accounts[] and every
@@ -106,7 +106,7 @@ export function FiltersDrawer({
   };
 
   const reset = () => {
-    // Search is not in the drawer, so Reset leaves it alone.
+    // Search is not in the drawer, so the drawer's Clear all leaves it alone.
     setDraft((d) => ({ ...clearedFilters(d), q: d.q }));
     setCustomOpen(false);
   };

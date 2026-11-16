@@ -21,9 +21,11 @@ export function DropdownChevron({ open }: { open: boolean }) {
 }
 
 /**
- * One option row. `active` is the keyboard/pointer highlight; `selected` draws
- * the shared selection indicator (a check) — only the two
- * controls that hold a value pass it.
+ * One option row's content. `selected` draws the shared selection indicator
+ * (a check) — only the two controls that hold a value pass it. The label is
+ * one line, ellipsised when long, with the full value in the native title.
+ * The keyboard highlight (data-active on the row) is set by each control from
+ * the keyboard only; pointer hover is a separate, CSS-only treatment.
  */
 export function DropdownOptionContent({
   label,
@@ -34,7 +36,9 @@ export function DropdownOptionContent({
 }) {
   return (
     <>
-      <span className="dd-option__text">{label}</span>
+      <span className="dd-option__text" title={label}>
+        {label}
+      </span>
       {selected ? (
         <span className="dd-option__check" aria-hidden="true">
           <Icon name="check" size="sm" />

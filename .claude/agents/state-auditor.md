@@ -44,7 +44,9 @@ find something trivially fixable, name the file and line in the note column and 
 7. **Check the rendered day headers against `expectedDayTotals`**, key by key. A day listed
    as `null` must render with no total at all. Then select each account in the scope dropdown
    and check the headers against `expectedDayTotals.scoped[<account id>]` the same way; then
-   load `?currency=EUR`, `GBP` and `USD` and check against `expectedDayTotals.currencyFiltered`.
+   load `?currency=EUR`, `GBP` and `USD` and check against `expectedDayTotals.currencyFiltered`;
+   then each `?account=<id>&currency=<code>` key of `expectedDayTotals.scopedAndCurrencyFiltered`
+   — `{}` means no row, no header and the no-results block.
 
 ## Output
 
@@ -57,7 +59,7 @@ Lead with: base URL, spec `meta.version`, and the headline count.
 |---|---|---|---|---|
 | empty | states | /?state=empty | yes | copy exact, toolbar hidden |
 | details | states | /?tx=tx_1004 | no | section order differs: breakdown before timeline |
-| completed | statuses | /?tx=tx_1001 | no | {deliveredAt} renders unsubstituted |
+| in_progress | statuses | /?tx=tx_1002 | no | {expectedBy} renders unsubstituted |
 | long_reference | edgeCases | /?tx=tx_1007 | yes | absent from the row; wraps in full in panel, copy control present |
 ```
 

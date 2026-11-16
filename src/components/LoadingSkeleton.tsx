@@ -2,19 +2,17 @@
  * states.loading — a skeleton mirroring the real layout: two day groups of
  * three rows, blocks sized to the real avatar, title, meta and amount. Group
  * headers are skeletons too. No spinner. The fixed count is deliberate: it is
- * never a guess at the real number.
+ * never a guess at the real number. The blocks are light placeholders
+ * (--skeleton-fill); a non-visual user hears the App's live region instead.
  */
-import { stateById } from '../spec/spec.ts';
-
 const GROUPS = 2;
 const ROWS_PER_GROUP = 3;
 
-const loadingCopy = stateById.get('loading')?.copy ?? {};
-
 export function LoadingSkeleton() {
   return (
-    <div className="list list--skeleton" aria-busy="true" aria-live="polite">
-      <span className="visually-hidden">{loadingCopy.ariaLive}</span>
+    // The announcement is App's persistent live region (states.loading.copy
+    // .ariaLive); the blocks themselves are hidden from assistive technology.
+    <div className="list list--skeleton" aria-busy="true" aria-hidden="true">
       {Array.from({ length: GROUPS }, (_, group) => (
         <section className="day" key={group}>
           <header className="day__header">

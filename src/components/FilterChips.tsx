@@ -92,7 +92,7 @@ function buildChips(query: Query): Chip[] {
     chips.push({
       key: `type-${id}`,
       filter: "type",
-      text: plain("type", typeById.get(id as never)?.label ?? id),
+      text: plain("type", typeById.get(id as never)?.label ?? ""),
       remove: (q) => ({ ...q, type: q.type.filter((v) => v !== id) }),
     });
   }
@@ -124,7 +124,7 @@ function buildChips(query: Query): Chip[] {
     chips.push({
       key: `status-${id}`,
       filter: "status",
-      text: plain("status", statusById.get(id as never)?.label ?? id),
+      text: plain("status", statusById.get(id as never)?.label ?? ""),
       remove: (q) => ({ ...q, status: q.status.filter((v) => v !== id) }),
     });
   }

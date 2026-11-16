@@ -7,12 +7,11 @@
    DERIVED    — new work the base palette does not carry: the status scale, the
                 money scale, the field treatment and the focus ring.
    CORRECTED  — a base value deliberately overridden, always for a measured
-                accessibility threshold, never for taste. There are exactly four,
+                accessibility threshold, never for taste. There are exactly three,
                 and they are the only places this file departs from the base:
                   --ink-secondary   #808080 -> #6A6A6A  (WCAG 1.4.3, text)
                   --money-void      #808080 -> #6A6A6A  (WCAG 1.4.3, text)
                   --line-control    #D9D9D9 -> #8F8F8F  (WCAG 1.4.11, controls)
-                  --skeleton-fill   #F2F2F2 -> #8F8F8F  (WCAG 1.4.11, loading)
                 Each carries its measured before-and-after ratios at the token.
 
    Layer 2 of the canon hierarchy. The spec owns behaviour and copy; this file
@@ -24,10 +23,21 @@
   /* ---------------------------------------------------------------------------
      Brand — base
      The accent is a single high-chroma lime used for primary actions, always
-     with black text on top. It is deliberately NOT used to carry status: a
-     colour that also marks the primary button cannot also mean "succeeded",
-     which is why status here is carried by label, icon shape and amount
-     treatment instead of colour.
+     with black text on top (16.85:1). It is not kept away from status: the
+     Completed badge fill, --status-completed-fill, is a pale tint of this
+     same lime, so lime does appear on a status. What holds is narrower — no
+     status is identified by the accent or by any colour: label, icon shape and
+     amount treatment carry it, and the Completed tint is drawn only on the
+     details panel badge, beside its label and check-circle.
+
+     The primary button is NOT held to the 3:1 boundary rule (WCAG 1.4.11),
+     and this is an exemption, not a pass. Its fill measures 1.25:1 against
+     --surface-page and it has no outline, so its edge alone does not identify
+     it; its label does (black on lime, 16.85:1), together with its place at
+     the start of an action group. Fields get the opposite treatment (Fields,
+     below): an empty field has no label inside it, so its outline has to
+     carry identification and is held to 3:1. Secondary buttons, which sit on
+     the page colour, take the 3.23:1 --line-control outline.
      ------------------------------------------------------------------------ */
   --brand-accent:            #C9F73A;
   --brand-accent-ink:        #000000;
@@ -43,7 +53,7 @@
                 meta text require (WCAG 1.4.3), and this ink carries the meta
                 line, the day totals and the chip field — the majority of the
                 text on the page.
-     Corrected: #6A6A6A — 5.41:1 on --surface-page, 5.21:1 on --surface-subtle,
+     Corrected: #6A6A6A — 5.41:1 on --surface-page, 5.18:1 on --surface-subtle,
                 4.74:1 on --surface-info. Measured from rendered pixels, not
                 computed from the base values. */
   --ink-secondary:           #6A6A6A;
@@ -54,8 +64,8 @@
      ------------------------------------------------------------------------ */
   --surface-page:            #FFFFFF;
   --surface-sunken:          #F2F2F2;   /* sidebar */
-  --surface-subtle:          #FAFAFA;   /* table header, hover */
-  --surface-info:            #EBF0FB;   /* selected row fill */
+  --surface-subtle:          #FAFAFA;   /* row hover, the filters drawer's option hover, chips, the panel's helper line */
+  --surface-info:            #EBF0FB;   /* selected row fill — 1.14:1 on the page, so the row also carries a bar */
 
   /* ---------------------------------------------------------------------------
      Lines — base
@@ -69,7 +79,12 @@
      is already told apart by its title, amount and 64px rhythm. The 3:1 rule
      governs control outlines and meaningful boundaries (--line-control,
      3.23:1), not these. Raised in four reviews; recorded here so it is a
-     decision, not a finding. */
+     decision, not a finding.
+     The same exemption, same class: the details panel's outline in its
+     persistent column (--line-default #E5E5E5, measured 1.26:1 on
+     --surface-page). It is a decorative container edge beside content that
+     carries the meaning — the panel is identified by its header, amount and
+     sections, not by its edge. */
   --line-row:                #E5E5E5;   /* row separator, 1px hairline */
   /* CORRECTED, for unfilled controls identified by their outline.
      Base:      --line-strong #D9D9D9 — 1.41:1 on --surface-page (and
@@ -111,14 +126,21 @@
        option text #000000 vs highlight fill ............ 19.11:1 (passes)
        selected checkmark #000000 vs surface ............ 21.00:1 (passes)
        surface hairline #E5E5E5 vs page tinted by shadow (#F8F8F8) 1.19:1 (decorative; options identify by text) */
-  /* CORRECTED, for the loading skeleton.
-     Base:      --surface-sunken #F2F2F2 — 1.12:1 on --surface-page.
-                During loading the skeleton is the entire screen, so its blocks
-                are the only thing showing what is coming; they are held to the
-                3:1 a graphical object needs (WCAG 1.4.11), not left decorative.
-     Corrected: #8F8F8F — 3.23:1 on --surface-page (sampled 143,143,143 on 255,255,255), measured from
-                rendered pixels. */
-  --skeleton-fill:           #8F8F8F;
+  /* BASE — the loading skeleton, the base sunken grey (--surface-sunken).
+     MEASURED — rendered pixels, Chromium, deviceScaleFactor 2, 1440x900,
+                PIL relative luminance (WCAG formula): a skeleton block samples
+                242,242,242 on 255,255,255 — 1.12:1 against --surface-page.
+                No threshold is claimed for it (below).
+     Why the 3:1 rule does not apply: WCAG 1.4.11 requires 3:1 for the
+     boundaries of controls and for graphics a person needs to understand
+     the content. A skeleton block is neither — it is a placeholder shape
+     that stands in for content not yet arrived and carries no information
+     anyone reads. It is drawn light on purpose so it reads as a placeholder,
+     never as text or a control; a value dark enough to clear 3:1 (the
+     earlier #8F8F8F) made the blocks read as content. A non-visual user is
+     served by the live region (states.loading.copy.ariaLive), never by this
+     grey. This value no longer claims any contrast threshold. */
+  --skeleton-fill:           var(--surface-sunken);   /* #F2F2F2 */
 
   /* ---------------------------------------------------------------------------
      Status — DERIVED (extension)
@@ -127,7 +149,13 @@
      Completed unmarked. This scale extends the base palette in its own
      spirit: low-chroma fills, black text, colour as the last channel
      after label, icon shape and amount treatment. Each fill is paired with
-     --ink-primary and passes 4.5:1.
+     --ink-primary and passes 4.5:1 for its label. The fills themselves are
+     decoration, not boundaries: against --surface-page they measure 1.09:1
+     (completed), 1.14:1 (progress), 1.17:1 (rejected), 1.12:1 (cancelled) and
+     1.12:1 (failed), so a badge is never identified by its fill.
+     --status-completed-fill is a tint of --brand-accent (see Brand).
+     --status-progress-fill is the same value as --surface-info, the selected
+     row's fill, which is why the selected row also carries a bar.
      ------------------------------------------------------------------------ */
   --status-completed-fill:   #EEFBC9;
   --status-progress-fill:    #EBF0FB;
@@ -179,7 +207,7 @@
   /* ---------------------------------------------------------------------------
      Type — base
      Inter throughout. 14px base, 13px for dense controls and table content,
-     20px/600 page title, 11px uppercase with 1px tracking for eyebrows.
+     24px/600 page title (18px pinned), 20px/600 drawer and block titles, 11px uppercase with 1px tracking for eyebrows.
      ------------------------------------------------------------------------ */
   --font-family:             Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-family-mono:        ui-monospace, "SF Mono", Menlo, monospace;   /* DERIVED — the Transaction ID (character groups
@@ -209,7 +237,7 @@
      ------------------------------------------------------------------------ */
   --radius-control:          4px;
   --radius-pill:             999px;
-  --radius-surface:          8px;    /* DERIVED — details panel, empty-state card */
+  --radius-surface:          8px;    /* DERIVED — details panel, block states, the States index list, the logo mark */
 
   /* ---------------------------------------------------------------------------
      Spacing — 4px grid
@@ -231,11 +259,13 @@
      a deliberate choice, recorded here so it reads as a decision rather than a
      drift.
      ------------------------------------------------------------------------ */
-  /* DERIVED — the one stroke heavier than a hairline: the timeline's step
-     markers, which must read as drawn marks rather than borders. */
+  /* DERIVED — the one stroke heavier than a hairline, for marks that must
+     read as drawn rather than as borders: the timeline's step markers, and
+     the bar on the sidebar's current item and on the selected row. */
   --stroke-strong:           2px;
   /* DERIVED — the strike through a voided amount: a hairline in the amount's
-     own colour, so the mark reads as part of the figure, not a rule over it. */
+     own colour, so the mark reads as part of the figure, not a rule over it.
+     Also every 1px border and inset outline in index.css. */
   --stroke-hairline:         1px;
 
   --hit-target:              44px;   /* DERIVED — WCAG 2.5.5: the minimum pointer target around an icon-only control */
@@ -277,11 +307,12 @@
      --line-height-base, plus its padding, then scrolls inside itself. DERIVED. */
   --note-min-height:          60px;
   --note-max-height:          136px;
-  /* DERIVED, measured: search.placeholder at --font-size-dense renders 233px
-     wide; plus the leading search glyph (--space-3 + --icon-size-sm +
-     --space-2 = 36px), --space-3 trailing padding and the 1px borders: 283,
-     rounded up to the 4px grid. Below this the placeholder clips. */
-  --search-min-width:        284px;
+  /* DERIVED, measured: search.placeholder at --font-size-dense in Inter
+     renders 266.7px wide (Chromium, 1440x900); plus the leading search glyph
+     (--space-3 + --icon-size-sm + --space-2 = 36px), --space-3 trailing
+     padding and the two hairline borders: 316.7, rounded up to the 4px grid.
+     Below this the placeholder clips. */
+  --search-min-width:        320px;
   --panel-width:             480px;   /* meta.layout.panelWidth */
   --sidebar-width:           240px;   /* meta.layout.sidebarWidth */
   --filters-drawer-width:    400px;   /* DERIVED — filtersDrawer */
@@ -292,7 +323,8 @@
      Elevation — DERIVED
      The base palette has no shadow scale. The persistent panel column
      sits in the grid and casts nothing. The drawers (meta.layout.panelModes.
-     drawer, filtersDrawer) cast --shadow-drawer over a --scrim.
+     drawer, filtersDrawer) cast --shadow-drawer over a --scrim; dropdown
+     surfaces cast --shadow-dropdown (Dropdowns, below).
      ------------------------------------------------------------------------ */
   /* DERIVED — meta.layout.panelModes.drawer and filtersDrawer: an
      overlay drawer over the content, its scrim behind it. */
@@ -301,8 +333,9 @@
 
   /* ---------------------------------------------------------------------------
      Motion — DERIVED
-     Two durations: drawers sliding in with the scrim fading, and the heading
-     collapsing on scroll. Both removed under prefers-reduced-motion.
+     Three durations: drawers sliding in with the scrim fading, the heading
+     collapsing on scroll, and a dropdown surface opening (--motion-dropdown,
+     Dropdowns, below). All removed under prefers-reduced-motion.
      ------------------------------------------------------------------------ */
   /* DERIVED — the heading collapsing on scroll (listBehaviour.headingCollapse.motion). */
   --motion-heading:          160ms cubic-bezier(0.2, 0, 0, 1);
@@ -335,7 +368,8 @@
   --dd-gap:                   var(--space-2);
   --dd-offset:                var(--space-2);   /* trigger to surface: clears the trigger focus ring (4px) by 4px */
   --dd-surface-padding:       var(--space-1);
-  --dd-max-height:            240px;            /* about seven single-line options, then it scrolls;
+  --dd-max-height:            240px;            /* the cap; a list that scrolls is cut to whole options
+                                                   (six in the counterparty list), then it scrolls;
                                                    keep a px literal — the combobox reads it to fit the drawer */
   --dd-option-height:         var(--control-height-sm);
   --dd-option-padding-y:      var(--space-1);
@@ -361,14 +395,14 @@
   --appbar-pinned-height:     calc(var(--control-height-md) + var(--appbar-gap-pinned));
 
   /* Layer order — every z-index in the app is one of these, lowest first.
-     Within the product: an in-flow mark lifted over its own connector, the
-     dropdown surfaces over stub notices, the pinned day header, the pinned
-     toolbar above it, then the overlay layer (drawers and scrims), which is
+     Within the product: an in-flow mark lifted over its own connector and a
+     stub notice, the pinned day header, the pinned toolbar above it, the
+     pinned heading, the dropdown surfaces, then the overlay layer (drawers and scrims), which is
      confined to the application frame. --z-prototype-bar is the top layer:
      the prototype controls bar is scaffolding and always sits above every
      product layer, never beneath one. */
   --z-raised:                1;    /* timeline marker over its connector */
-  --z-notice:                1;    /* a stub notice, below its panel action */
+  --z-notice:                1;    /* a stub notice, in its own anchor's stacking order */
   --z-day-header:            10;   /* sticky day header */
   --z-listbar:               20;   /* sticky toolbar and chips */
   --z-appbar:                22;   /* the collapsed page heading, above the toolbar it pins over */

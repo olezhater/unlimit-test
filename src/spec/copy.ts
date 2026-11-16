@@ -50,15 +50,17 @@ export const DAY_TOTAL_SEPARATOR = DAY_TOTAL_EXAMPLE[1];
 export const META_SEPARATOR = (() => {
   // "Status mark … · time · note" — take the single glyph between fields.
   const match = /\s(\S)\s/.exec(spec.listBehaviour.rowAnatomy.meta);
-  return match ? ` ${match[1]} ` : DAY_TOTAL_SEPARATOR;
+  if (!match) throw new Error('listBehaviour.rowAnatomy.meta no longer carries a separator between its fields.');
+  return ` ${match[1]} `;
 })();
 
 /* -------------------------------------------------------------------------- */
 /* The fee line on a parent row                                               */
 /* feeModel.rules[1]: "... a secondary line: 'incl. {amount} {currency} fee'" */
 /* -------------------------------------------------------------------------- */
-export const FEE_LINE_TEMPLATE =
-  quoted(spec.feeModel.rules[1])[0] ?? '{amount} {currency}';
+const feeLine = quoted(spec.feeModel.rules[1])[0];
+if (!feeLine) throw new Error('feeModel.rules[1] no longer carries the quoted fee line template.');
+export const FEE_LINE_TEMPLATE = feeLine;
 
 /* -------------------------------------------------------------------------- */
 /* Panel labels and headings — spec objects, read directly                    */
@@ -71,10 +73,15 @@ if (!details?.copy) {
 }
 export const DETAILS_COPY = details.copy;
 
-/** states.details.copyableFields — the only fields that carry a copy control. */
-export const COPYABLE_FIELDS: { section: string; field: string }[] =
-  (details as { copyableFields?: { fields: { section: string; field: string }[] } } | undefined)
-    ?.copyableFields?.fields ?? [];
+/**
+ * states.details.copyableFields.copies — which rows may carry a copy control
+ * and what each copies: 'value' (what the row shows) or 'iban' (the IBAN of
+ * the party the row names where there is one, else what the row shows —
+ * copyableFields.ibanRule).
+ */
+export const COPIES: Record<string, 'value' | 'iban'> =
+  (details as { copyableFields?: { copies: Record<string, 'value' | 'iban'> } } | undefined)
+    ?.copyableFields?.copies ?? {};
 
 /*
  * states.details.sections[] — the panel's sections, in render order, each with
@@ -111,11 +118,17 @@ const FX_LABEL_KEYS = [
   'youReceive',
 ] as const;
 
-export const FX_BREAKDOWN = spec.fxModel.detailsBreakdown.map((line, index) => ({
-  label: FIELD_LABELS[FX_LABEL_KEYS[index]],
+export const FX_BREAKDOWN = spec.fxModel.detailsBreakdown.map((line, index) => {
+  const [lineLabel, ...rest] = line.split(' — ');
+  const label = FIELD_LABELS[FX_LABEL_KEYS[index]];
+  // The line's own label and fieldLabels are one string held twice; a reorder
+  // or rename in either must fail here, not mislabel a figure.
+  if (lineLabel.trim() !== label) {
+    throw new Error(`fxModel.detailsBreakdown[${index}] is labelled "${lineLabel}" but fieldLabels gives "${label}".`);
+  }
   // "Label — {token} {token}" → the value side only.
-  template: line.split(' — ').slice(1).join(' — ').trim(),
-}));
+  return { label, template: rest.join(' — ').trim() };
+});
 
 export const FILTER_CHIPS = spec.filterChips;
 
@@ -131,7 +144,7 @@ export const TIMELINE_STEPS = spec.timelineRules.steps;
 /** toolbar.download — "Download statement", a stub under prototypeAffordances.stubRule. */
 export const DOWNLOAD = spec.toolbar.download;
 
-/** states.details.repeatAction — one Repeat action for every non-incoming transaction. */
+/** states.details.repeatAction — one Repeat action, on outgoing payments only. */
 const repeatAction = (details as { repeatAction?: { label: string } } | undefined)?.repeatAction;
 if (!repeatAction?.label) {
   throw new Error('states.details.repeatAction.label is missing: the Repeat action would render empty.');

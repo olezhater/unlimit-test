@@ -97,7 +97,7 @@ clearance to the next element, not only actual breaks.
   the list is the design (`meta.layout.rationale`); check instead that the drawer spans the
   visible height of the frame (the stage below the prototype bar, or the viewport under
   `?chrome=off`) and that its scrim covers the rest of that visible area, never the bar.
-- **Overlay containment (`qaChecklist` last item).** With the bar shown (no `?chrome=off`), open
+- **Overlay containment (`qaChecklist[33]`).** With the bar shown (no `?chrome=off`), open
   the details drawer at 1280, the filters drawer, the dropdowns and the Download statement notice, scroll the
   stage behind each, and sample the bar: its background stays `--proto-surface`, nothing is
   drawn over it, and `elementFromPoint` on it returns the bar. This is the one check that needs
@@ -113,13 +113,26 @@ number. "Looks fine" is not a result.
 - **Body and meta text: ≥ 4.5:1** (WCAG 1.4.3). The usual failures here are the grey meta
   line, the grey source amount on tx_1003, and the day-header net total.
 - **Large text (≥24px, or ≥19px at 600+) and UI boundaries: ≥ 3:1** (WCAG 1.4.11). Covers
-  chip borders, input and button borders, the copy and dropdown outlines, and the skeleton blocks in
-  `/?state=loading` against the page background.
-- **Exempt, by recorded decision: row dividers and the day-header rule.** They measure 1.27:1
-  (`--line-row`) and 1.41:1 (`--line-strong`) and are decorative separators beside text that
-  carries the meaning, so the 3:1 boundary rule — which governs control outlines and meaningful
-  boundaries — does not apply (see the note beside `--line-row` in `tokens.css`). Do not report
-  them. The exemption names these two only; the panel edge is not covered by it.
+  chip borders, input and button borders, the copy control and the dropdown trigger outlines.
+- **Exempt, by recorded decision: row dividers, the day-header rule and the details panel's
+  outline.** They measure 1.26:1 (`--line-row`), 1.41:1 (`--line-strong`) and 1.26:1 (the
+  persistent panel's `--line-default` edge) and are decorative separators or container edges
+  beside content that carries the meaning, so the 3:1 boundary rule — which governs control
+  outlines and meaningful boundaries — does not apply (see the note beside `--line-row` in
+  `tokens.css`). Do not report them. The exemption names these three only.
+- **Exempt, by recorded decision: the primary button's edge.** Its fill measures 1.25:1
+  against `--surface-page` and it has no outline, so its edge alone does not identify it; its
+  label does (black on lime, 16.85:1), together with its place at the start of an action
+  group. WCAG 1.4.11 applies where a boundary is needed to identify a control, and this one is
+  not (see the Brand note in `tokens.css`, which carries the same wording and measurement). Do
+  not report the fill ratio; do report its label if it ever falls below 4.5:1.
+- **Not a boundary: the dropdown surface's hairline** (`--line-surface`, #E5E5E5, 1.19:1 against the page tinted by its shadow).
+  The options inside are identified by their text, so the 3:1 rule does not bind it (the note
+  at `--line-surface` in `tokens.css`). Do not report it.
+- **Not a boundary: the loading skeleton blocks.** A placeholder shape carries no information a
+  person reads, so the 3:1 rule does not bind it (`states.loading.skeletonFill`, the note at
+  `--skeleton-fill`). Measure and report its ratio for the record; flag it only if a block reads
+  as text or a control, or is invisible against the page.
 - **Status badges: ≥ 4.5:1** for the label text against the badge fill — the four marked
   statuses in the row, and all five on the panel badge.
 - **Strikethrough amounts** (rejected, cancelled, failed): the amount text still needs 4.5:1,
@@ -136,7 +149,7 @@ number. "Looks fine" is not a result.
 - Ring **≥ 2px** and not clipped by the parent's `overflow: hidden` — row focus rings on a
   64px row with a divider are the common casualty.
 - After Escape closes the panel, focus returns to the originating row and that ring is
-  **visible on screen**, not scrolled out of view (`qaChecklist[7]`).
+  **visible on screen**, not scrolled out of view (`qaChecklist[10]`).
 
 ### 5. The greyscale status test
 
@@ -167,13 +180,18 @@ the toggle must desaturate the application frame and leave the prototype bar unt
 
 - Fonts loaded, not fallen back; no synthesised faux-bold where a real weight exists.
 - Counterparty logos (`logos`, fixtures with a `merchantDomain`): no broken image, no squashed
-  aspect ratio. Headless captures show lettermarks (Brandfetch blocks headless hotlinking);
+  aspect ratio. Headless captures show lettermarks (Brandfetch refuses headless user agents; the real
+  logos are verified manually on the deployed build, `logos.verification` — never report a
+  capture's lettermarks as a broken integration);
   every lettermark must be a single letter on its tint at ≥ 4.5:1.
-- No leftover scaffolding visible: an unsubstituted `{n}`, `{total}`, `{deliveredAt}`,
+- No leftover scaffolding visible: an unsubstituted `{n}`, `{total}`, `{cancelledAt}`,
   `{expectedBy}`, `{rateLockedAt}`, `{convertedAmount}`, `{sourceAmount}` or `{amount}` on
   screen is a **blocker**. Verify by reading the rendered
   text, never by layer or class name.
 - Even rhythm: all rows at the 64px `rowHeight`; no single row or group gap off the others.
+- Dropdown options (`dropdowns.optionRows`): every option in the three lists is one line and one
+  height; a long name ends in an ellipsis, never wraps; hover (a fill) and the keyboard
+  highlight (fill plus inset ring) are visibly distinct (`qaChecklist[75]`).
 - The skeleton in `/?state=loading` mirrors the real layout — two groups of three rows, blocks
   sized to the real avatar, title, meta and amount; no spinner.
 

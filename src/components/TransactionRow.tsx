@@ -65,6 +65,9 @@ export function TransactionRow({
         id={`row-${tx.id}`}
         className="row"
         data-selected={selected || undefined}
+        /* The row whose transaction the panel holds: exposed as state, not
+           only as a fill. */
+        aria-current={selected ? 'true' : undefined}
         onClick={() => onOpen(tx.id)}
         /* Assembled from spec values only — the allowed aria exception. */
         aria-label={`${title}, ${status.label}, ${amount}`}

@@ -161,7 +161,8 @@ code {
  * meta.layout.panelModes. Persistent (frame 1440+): the panel column is a
  * sibling of the list, so selecting a transaction changes no column width and
  * re-truncates no row. Drawer (below 1440): one track; the panel overlays.
- * The list column is fluid with a 640px floor; the panel is fixed.
+ * The list column is fluid with a 640px floor; the panel has a 480px floor
+ * and widens with the list, three parts to two, past a 1440 frame.
  */
 .columns {
   display: grid;
@@ -190,7 +191,7 @@ code {
    stop short; only its contents stick to the top while the page scrolls. */
 .sidebar {
   align-self: stretch;
-  border-right: 1px solid var(--line-default);
+  border-right: var(--stroke-hairline) solid var(--line-default);
   background: var(--surface-sunken);
 }
 
@@ -242,7 +243,7 @@ code {
 .sidebar__item[data-current] {
   background: var(--surface-page);
   font-weight: var(--font-weight-semibold);
-  box-shadow: inset 0 0 0 1px var(--line-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line-default);
 }
 
 .sidebar__item[data-current]::before {
@@ -287,7 +288,7 @@ code {
 }
 
 /* accountScope.placement — the title and the account dropdown read as one
-   heading: "Transaction history  All accounts ⌄". */
+   heading: "Transactions  All accounts ⌄". */
 .appbar__heading {
   display: flex;
   align-items: center;
@@ -333,7 +334,7 @@ code {
   flex: none;
 }
 
-/* Trigger — a button, a select-only combobox, or a field holding an input. */
+/* Trigger — a select-only combobox, or a field holding an input. */
 .dd-trigger {
   display: inline-flex;
   align-items: center;
@@ -342,7 +343,7 @@ code {
   width: 100%;
   height: var(--dd-trigger-height);
   padding: 0 var(--dd-trigger-padding-end) 0 var(--dd-trigger-padding-start);
-  border: 1px solid var(--line-field);
+  border: var(--stroke-hairline) solid var(--line-field);
   border-radius: var(--radius-control);
   background: var(--surface-field);
   color: var(--ink-primary);
@@ -371,7 +372,10 @@ code {
 }
 
 .dd-trigger--inline:hover {
-  background: var(--surface-sunken);
+  /* --surface-subtle, not --surface-sunken: link ink on the sunken grey
+     measures 4.43:1, under the 4.5:1 its 13px and pinned 18px text need;
+     on --surface-subtle it measures 4.76:1. */
+  background: var(--surface-subtle);
 }
 
 .dd-trigger--inline .dd-chevron {
@@ -414,7 +418,8 @@ code {
 }
 
 .text-action:hover {
-  background: var(--surface-sunken);
+  /* As the inline trigger: 4.76:1 here, 4.43:1 on --surface-sunken. */
+  background: var(--surface-subtle);
 }
 
 .dd-trigger__value {
@@ -433,6 +438,49 @@ code {
 .dd-trigger--input:focus-within {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
+}
+
+/* The input and the text drawn over it: the current value as placeholder
+   while the list is open and empty (filters.counterparty.openBehaviour), or
+   the value itself while closed, so a long name ends in an ellipsis. */
+.combobox__field {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+}
+
+.combobox__input[data-ghost='placeholder']::placeholder {
+  color: transparent;
+}
+
+/* The value is drawn by the overlay; the input keeps its caret and selection. */
+.combobox__input[data-ghost='value'] {
+  color: transparent;
+  caret-color: var(--ink-primary);
+}
+
+.combobox__input[data-ghost='value']::selection {
+  color: transparent;
+}
+
+.combobox__ghost[data-kind='value'] {
+  color: var(--ink-primary);
+}
+
+.combobox__ghost {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  padding-left: var(--dd-trigger-padding-start);
+  overflow: hidden;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .combobox__input {
@@ -491,22 +539,18 @@ code {
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
-  border: 1px solid var(--line-surface);
+  border: var(--stroke-hairline) solid var(--line-surface);
   border-radius: var(--radius-control);
   background: var(--surface-page);
   box-shadow: var(--shadow-dropdown);
   animation: dd-in var(--motion-dropdown);
 }
 
-/* The scope and Download surfaces size to their longest option and keep each
-   option on one line; the combobox surface spans its field and lets a long
-   counterparty name wrap. */
+/* The account and Date surfaces size to their longest option; the combobox
+   surface spans its field. Every option is one line in all three, so rows
+   are one height: a long name ends in an ellipsis (.dd-option__text). */
 .dd-surface:not(.dd-surface--fill) {
   width: max-content;
-}
-
-.dd-surface:not(.dd-surface--fill) .dd-option {
-  white-space: nowrap;
 }
 
 .dd-surface--fill {
@@ -535,31 +579,33 @@ code {
   width: 100%;
   min-height: var(--dd-option-height);
   padding: var(--dd-option-padding-y) var(--dd-option-padding-x);
-  border: 0;
   border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink-primary);
-  font: inherit;
   font-size: var(--dd-font-size);
-  text-align: left;
-  white-space: normal;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.dd-option + .dd-option,
-li + li > .dd-option {
+.dd-option + .dd-option {
   margin-top: var(--dd-option-gap);
 }
 
 .dd-option__text {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Highlighted by keyboard or pointer: a light fill alone. Focus stays on the
-   trigger (aria-activedescendant), so no ring is drawn on the option. The
-   fill measures 1.10:1 against the surface (tokens.css, MEASURED): below the
-   3:1 a state indicator would need — a known cost of the lighter design. */
+/* Pointer hover: the light fill alone. It is not a choice — Tab and Enter
+   never commit what the pointer rests on (filters.counterparty.openBehaviour). */
+.dd-option:hover {
+  background: var(--surface-field);
+}
+
+/* The keyboard highlight, set only by typing and the arrow keys: the fill
+   plus the inset ring. Focus itself stays on the trigger
+   (aria-activedescendant follows this, never the pointer). */
 .dd-option[data-active] {
   background: var(--surface-field);
   /* The highlighted option is where a keyboard user is in the list — a focus
@@ -600,7 +646,7 @@ li + li > .dd-option {
   /* Directly under the pinned heading band (listBehaviour.headingCollapse). */
   top: var(--appbar-pinned-height);
   padding-top: var(--space-3);
-  border-bottom: 1px solid transparent;
+  border-bottom: var(--stroke-hairline) solid transparent;
   background: var(--surface-page);
 }
 
@@ -642,7 +688,7 @@ li + li > .dd-option {
   width: 100%;
   height: var(--control-height-md);
   padding: 0 var(--space-3) 0 calc(var(--space-3) + var(--icon-size-sm) + var(--space-2));
-  border: 1px solid var(--line-field);
+  border: var(--stroke-hairline) solid var(--line-field);
   border-radius: var(--radius-control);
   background: var(--surface-field);
   font-size: var(--font-size-dense);
@@ -663,7 +709,7 @@ li + li > .dd-option {
   gap: var(--space-2);
   height: var(--control-height-md);
   padding: 0 var(--dd-trigger-padding-start);
-  border: 1px solid var(--line-field);
+  border: var(--stroke-hairline) solid var(--line-field);
   border-radius: var(--radius-control);
   background: var(--surface-field);
   font-size: var(--dd-font-size);
@@ -681,13 +727,21 @@ li + li > .dd-option {
 }
 
 /* In the panel's pinned footer the notice opens above its button — below is
-   the panel's edge — and rightward from it, so it stays inside the panel
-   whichever position the button holds. */
+   the panel's edge — and rightward from it; the last of several opens
+   leftward (below), so it stays inside the panel whichever position the
+   button holds. */
 .panel__actions .stub-anchor .proto-notice {
   top: auto;
   bottom: calc(100% + var(--space-1));
   right: auto;
   left: 0;
+}
+
+/* The last of several actions sits toward the panel's right edge, where a
+   rightward notice would run past it: that one opens leftward instead. */
+.panel__actions .stub-anchor:last-child:not(:first-child) .proto-notice {
+  right: 0;
+  left: auto;
 }
 
 /* prototypeAffordances.stubNotice — drawn in the prototype bar's own style
@@ -765,7 +819,7 @@ li + li > .dd-option {
      as the dropdown triggers beside them in the drawer. */
   height: var(--control-height-md);
   padding: 0 var(--dd-trigger-padding-start);
-  border: 1px solid var(--line-field);
+  border: var(--stroke-hairline) solid var(--line-field);
   background: var(--surface-field);
   border-radius: var(--radius-control);
   font-size: var(--font-size-dense);
@@ -798,7 +852,7 @@ li + li > .dd-option {
   gap: var(--space-1);
   max-width: var(--chip-max-width);
   padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  border: 1px solid var(--line-control);
+  border: var(--stroke-hairline) solid var(--line-control);
   border-radius: var(--radius-pill);
   background: var(--surface-subtle);
   font-size: var(--font-size-dense);
@@ -842,6 +896,9 @@ li + li > .dd-option {
   color: var(--ink-link);
   font-size: var(--font-size-dense);
   text-decoration: underline;
+  /* At least a 24px target (WCAG 2.5.8), as the timeline toggle; the text
+     alone is 21px tall. */
+  min-height: var(--space-5);
 }
 
 .chips__count {
@@ -868,7 +925,7 @@ li + li > .dd-option {
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--line-strong);
+  border-bottom: var(--stroke-hairline) solid var(--line-strong);
   background: var(--surface-page);
 }
 
@@ -890,10 +947,11 @@ li + li > .dd-option {
 }
 
 .row-item + .row-item .row {
-  border-top: 1px solid var(--line-row);
+  border-top: var(--stroke-hairline) solid var(--line-row);
 }
 
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -912,6 +970,19 @@ li + li > .dd-option {
 
 .row[data-selected] {
   background: var(--surface-info);
+}
+
+/* states.list.behaviour — the selected row is marked by a bar at its leading
+   edge, the sidebar's current-item mark, not by its fill alone (1.14:1). */
+.row[data-selected]::before {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  left: 0;
+  width: var(--stroke-strong);
+  border-radius: var(--radius-pill);
+  background: var(--ink-primary);
 }
 
 .row__body {
@@ -1058,7 +1129,7 @@ li + li > .dd-option {
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--surface-page);
-  box-shadow: inset 0 0 0 1px var(--line-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line-default);
   object-fit: cover;
 }
 
@@ -1076,7 +1147,7 @@ li + li > .dd-option {
   background: var(--surface-page);
   /* --ink-secondary, not --line-control: the badge sits on the avatar tints,
      where #8F8F8F measured 2.51–2.74:1 against the 3:1 boundary threshold. */
-  box-shadow: inset 0 0 0 1px var(--ink-secondary);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--ink-secondary);
   color: var(--ink-primary);
 }
 
@@ -1142,7 +1213,7 @@ li + li > .dd-option {
      push its bottom — the actions — under the fold. Once stuck, the cost is
      a gap below the panel instead, which hides nothing. */
   max-height: calc(100vh - var(--panel-offset, var(--space-7)) - var(--space-3));
-  border: 1px solid var(--line-default);
+  border: var(--stroke-hairline) solid var(--line-default);
   border-radius: var(--radius-surface);
   background: var(--surface-page);
   overflow: hidden;
@@ -1152,7 +1223,7 @@ li + li > .dd-option {
 .panel__pinned {
   flex: none;
   padding: var(--space-5) var(--space-5) var(--space-4);
-  border-bottom: 1px solid var(--line-default);
+  border-bottom: var(--stroke-hairline) solid var(--line-default);
 }
 
 .panel__close {
@@ -1233,7 +1304,7 @@ li + li > .dd-option {
 }
 
 .panel__helper {
-  margin-bottom: var(--space-5);
+  margin-top: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-control);
   background: var(--surface-subtle);
@@ -1252,7 +1323,7 @@ li + li > .dd-option {
 .panel__section + .panel__section {
   margin-top: var(--space-5);
   padding-top: var(--space-5);
-  border-top: 1px solid var(--line-default);
+  border-top: var(--stroke-hairline) solid var(--line-default);
 }
 
 .panel__section-title {
@@ -1273,14 +1344,14 @@ li + li > .dd-option {
   flex-wrap: wrap;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--line-default);
+  border-top: var(--stroke-hairline) solid var(--line-default);
   background: var(--surface-page);
 }
 
 .button {
   height: var(--control-height-md);
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--stroke-hairline) solid transparent;
   border-radius: var(--radius-control);
   font-size: var(--font-size-dense);
   font-weight: var(--font-weight-medium);
@@ -1378,21 +1449,15 @@ li + li > .dd-option {
   color: var(--ink-secondary);
 }
 
-/* Collapsed: the current step alone as a plain line — no marker, no
-   connector, its time beside the label. */
+/* Collapsed: the current step alone as plain text — no marker, no
+   connector, its date and time on the line beneath the label
+   (timelineRules.accordion). The column layout of .timeline__body holds. */
 .timeline-accordion:not([data-expanded]) .timeline__marker {
   display: none;
 }
 
 .timeline-accordion:not([data-expanded]) .timeline__step {
   padding-bottom: 0;
-}
-
-.timeline-accordion:not([data-expanded]) .timeline__body {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--space-2);
 }
 
 /* The accordion toggle under the timeline. */
@@ -1466,7 +1531,7 @@ li + li > .dd-option {
 
 .copy__status:not(:empty) {
   padding: var(--space-0-5) var(--space-2);
-  border: 1px solid var(--line-control);
+  border: var(--stroke-hairline) solid var(--line-control);
   border-radius: var(--radius-control);
   background: var(--surface-page);
 }
@@ -1503,7 +1568,7 @@ li + li > .dd-option {
 
 .breakdown__line--total {
   padding-top: var(--space-2);
-  border-top: 1px solid var(--line-default);
+  border-top: var(--stroke-hairline) solid var(--line-default);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -1547,7 +1612,7 @@ li + li > .dd-option {
   min-width: 0;
   max-height: var(--note-max-height);
   padding: var(--space-2) var(--dd-trigger-padding-start);
-  border: 1px solid var(--line-field);
+  border: var(--stroke-hairline) solid var(--line-field);
   border-radius: var(--radius-control);
   background: var(--surface-field);
   color: var(--ink-primary);
@@ -1595,7 +1660,7 @@ li + li > .dd-option {
   max-width: var(--block-state-max-width);
   margin: var(--space-7) auto;
   padding: var(--space-6) var(--space-5);
-  border: 1px solid var(--line-default);
+  border: var(--stroke-hairline) solid var(--line-default);
   border-radius: var(--radius-surface);
   text-align: center;
 }
@@ -1717,13 +1782,13 @@ li + li > .dd-option {
 
 .states__list {
   margin-top: var(--space-5);
-  border: 1px solid var(--line-default);
+  border: var(--stroke-hairline) solid var(--line-default);
   border-radius: var(--radius-surface);
   overflow: hidden;
 }
 
 .states__item + .states__item {
-  border-top: 1px solid var(--line-default);
+  border-top: var(--stroke-hairline) solid var(--line-default);
 }
 
 .states__link {
@@ -1836,7 +1901,7 @@ li + li > .dd-option {
 
 .proto__button {
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--proto-line);
+  border: var(--stroke-hairline) solid var(--proto-line);
   border-radius: var(--radius-control);
   background: var(--proto-surface-raised);
   color: var(--proto-ink);
@@ -1868,7 +1933,7 @@ li + li > .dd-option {
    way out, from any route. Scaffolding colours and size only. */
 .proto__chip {
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--proto-ink);
+  border: var(--stroke-hairline) solid var(--proto-ink);
   border-radius: var(--radius-pill);
   background: var(--proto-ink);
   color: var(--proto-surface);
@@ -1986,7 +2051,7 @@ li + li > .dd-option {
   align-items: center;
   min-height: calc(var(--control-height-md) + var(--space-5) * 2);
   padding: 0 var(--space-5);
-  border-bottom: 1px solid var(--line-default);
+  border-bottom: var(--stroke-hairline) solid var(--line-default);
 }
 
 .filters-drawer__title {
@@ -2017,7 +2082,7 @@ li + li > .dd-option {
   margin: 0;
   padding: var(--space-4) 0;
   border: 0;
-  border-bottom: 1px solid var(--line-default);
+  border-bottom: var(--stroke-hairline) solid var(--line-default);
 }
 
 .field {
@@ -2057,7 +2122,7 @@ li + li > .dd-option {
   justify-content: flex-end;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--line-default);
+  border-top: var(--stroke-hairline) solid var(--line-default);
 }
 
 @keyframes drawer-in {

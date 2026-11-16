@@ -7,6 +7,8 @@
  *                            child fee, and conversions carrying a fee
  *   countsInDayTotal       — only settled money contributes to a day total
  *   groupHeaderExtra       — totals are per currency, never converted
+ *   groupHeaderExtra.narrowing — one leg must pass the account scope and the
+ *                            currency filter together; rows and totals share it
  *   fxModel.listRow        — target amount primary and positive, source negative
  */
 import {
@@ -14,16 +16,15 @@ import {
   accountOptions,
   childFeeTotal,
   childrenOf,
-  currenciesOf,
+  hasThirdParty,
   isConversion,
   statusById,
   titleOf,
   topLevelFixtures,
   NOW,
 } from '../spec/spec.ts';
-import { magnitude } from './format.ts';
+import { dayKey, magnitude, signedMoney } from './format.ts';
 import { noteOf } from './notes.ts';
-import { dayKey, signedMoney } from './format.ts';
 import { DAY_TOTAL_SEPARATOR } from '../spec/copy.ts';
 import type { Query } from './url.ts';
 
@@ -97,30 +98,61 @@ function matchesDate(tx: Fixture, query: Query): boolean {
   return created >= start;
 }
 
-/** Every account a transaction moves through. */
-function accountsOf(tx: Fixture): string[] {
-  return [tx.account, tx.targetAccount].filter(Boolean) as string[];
+/** What the view narrows to: the account scope and the currency filter. */
+interface Narrowing {
+  scope: string | null;
+  currencies: string[];
 }
 
-/** The one account value (accountScope / filters.account). null is 'All accounts'. */
-function inScope(tx: Fixture, scope: string | null): boolean {
-  return !scope || accountsOf(tx).includes(scope);
+/**
+ * A movement on one of the user's accounts. A conversion has two — its
+ * source leg and its target leg; every other transaction has one.
+ */
+interface Leg {
+  account: string | undefined;
+  currency: string;
+  value: number;
+}
+
+function legsOf(tx: Fixture): Leg[] {
+  if (isConversion(tx)) {
+    return [
+      { account: tx.account, currency: tx.sourceCurrency ?? '', value: tx.sourceAmount ?? 0 },
+      { account: tx.targetAccount, currency: tx.targetCurrency ?? '', value: tx.targetAmount ?? 0 },
+    ];
+  }
+  return [{ account: tx.account, currency: tx.currency ?? '', value: tx.amount ?? 0 }];
+}
+
+/**
+ * listBehaviour.groupHeaderExtra.narrowing — one leg must satisfy every
+ * active constraint on its own. Different legs satisfying different
+ * constraints is not a match. The same test decides the rows and the totals,
+ * so the two can never disagree.
+ */
+function legPasses(leg: Leg, narrow: Narrowing): boolean {
+  if (narrow.scope && leg.account !== narrow.scope) return false;
+  if (narrow.currencies.length && !narrow.currencies.includes(leg.currency)) return false;
+  return true;
+}
+
+function narrowedIn(tx: Fixture, narrow: Narrowing): boolean {
+  return legsOf(tx).some((leg) => legPasses(leg, narrow));
 }
 
 /** {total} of the result count: the transactions within the selected account (scope). */
 export function scopedTotal(scope: string | null): number {
-  return topLevelFixtures.filter((tx) => inScope(tx, scope)).length;
+  return topLevelFixtures.filter((tx) => narrowedIn(tx, { scope, currencies: [] })).length;
 }
 
 export function applyFilters(query: Query): Fixture[] {
   return topLevelFixtures.filter((tx) => {
-    if (!inScope(tx, query.scope)) return false;
+    if (!narrowedIn(tx, { scope: query.scope, currencies: query.currency })) return false;
     if (query.status.length && !query.status.includes(tx.status)) return false;
-    if (query.currency.length && !currenciesOf(tx).some((c) => query.currency.includes(c))) {
-      return false;
-    }
     if (!matchesType(tx, query.type)) return false;
-    if (query.counterparty && titleOf(tx) !== query.counterparty) return false;
+    // filters.counterparty — a recipient or sender; a conversion or an
+    // account-level fee has none, so no value of this filter matches one.
+    if (query.counterparty && !(hasThirdParty(tx) && titleOf(tx) === query.counterparty)) return false;
     const value = amountMagnitude(tx);
     if (query.amountMin && value < Number(query.amountMin)) return false;
     if (query.amountMax && value > Number(query.amountMax)) return false;
@@ -146,27 +178,17 @@ export interface DayGroup {
 
 /**
  * Per-currency day total. Unnarrowed, a conversion contributes twice: the debit
- * in the source currency and the credit in the target currency.
- * groupHeaderExtra.narrowing — one rule for the account scope and the currency
- * filter: a movement counts only if it passed through the scoped account and
- * is in a selected currency, so a conversion contributes only the legs that
- * pass both. No conversion is performed.
+ * in the source currency and the credit in the target currency. Narrowed, a
+ * leg counts only if it passes every active constraint itself (legPasses) —
+ * the test that put its row on screen. No conversion is performed.
  */
 function dayTotal(rows: Fixture[], narrow: Narrowing): string | null {
   const totals = new Map<string, number>();
-  const add = (account: string | undefined, currency: string, value: number) => {
-    if (narrow.scope && account !== narrow.scope) return;
-    if (narrow.currencies.length && !narrow.currencies.includes(currency)) return;
-    totals.set(currency, (totals.get(currency) ?? 0) + value);
-  };
-
   for (const tx of rows) {
     if (!statusById.get(tx.status)?.countsInDayTotal) continue;
-    if (isConversion(tx)) {
-      add(tx.account, tx.sourceCurrency ?? '', tx.sourceAmount ?? 0);
-      add(tx.targetAccount, tx.targetCurrency ?? '', tx.targetAmount ?? 0);
-    } else {
-      add(tx.account, tx.currency ?? '', tx.amount ?? 0);
+    for (const leg of legsOf(tx)) {
+      if (!legPasses(leg, narrow)) continue;
+      totals.set(leg.currency, (totals.get(leg.currency) ?? 0) + leg.value);
     }
   }
 
@@ -178,12 +200,6 @@ function dayTotal(rows: Fixture[], narrow: Narrowing): string | null {
     .sort(([a], [b]) => currencyRank(a) - currencyRank(b))
     .map(([currency, value]) => signedMoney(value, currency))
     .join(DAY_TOTAL_SEPARATOR);
-}
-
-/** What the view narrows day totals to: the account scope and the currency filter. */
-interface Narrowing {
-  scope: string | null;
-  currencies: string[];
 }
 
 export function groupByDay(

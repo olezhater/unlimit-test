@@ -11,7 +11,7 @@
  *     HTTP cache serves it, since the URL for a merchant never changes.
  *
  * The URL template and client id source are spec data (logos.urlTemplate,
- * logos.clientIdSource). A domain is requested at most once per session: the
+ * logos.clientIdSource). A domain's image is requested at most once per session: the
  * first request's outcome — loaded or failed — is kept here and every avatar
  * for that merchant reads it. A failure is silent; the avatar keeps its
  * lettermark.
@@ -22,6 +22,12 @@
  * after LOGO_TIMEOUT_MS is abandoned. A missing or empty client id makes no
  * request at all. Nothing is rendered until a logo has fully loaded, so there
  * is no broken image and no flash of a missing asset.
+ *
+ * What is PERSISTED is narrower (logos.cache): a logo that loaded, and the
+ * provider's own reply that it has none — a 404. An image's error event does
+ * not say why it failed, so after one the status is asked for once
+ * (providerHasNoLogo); a refused connection, a 5xx, a redirect or a timeout
+ * records nothing and the merchant is requested again on the next visit.
  */
 import { useEffect, useState } from 'react';
 import { spec } from '../spec/spec.ts';
@@ -51,6 +57,21 @@ function logoUrl(domain: string): string {
     .replace('{clientId}', encodeURIComponent(CLIENT_ID));
 }
 
+/**
+ * The one definitive negative: the provider itself answering 404 for this
+ * URL (logos.urlNote — fallback/404 makes an unknown brand a 404). Anything
+ * else — a thrown fetch (refused, dropped, offline, blocked), a redirect, a
+ * 5xx, a 429 — is not an answer and returns false.
+ */
+async function providerHasNoLogo(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    return response.status === 404 && !response.redirected;
+  } catch {
+    return false;
+  }
+}
+
 function request(domain: string): Entry {
   const existing = cache.get(domain);
   if (existing) return existing;
@@ -66,29 +87,33 @@ function request(domain: string): Entry {
   const entry: Entry = { status: 'loading', url: logoUrl(domain), listeners: new Set() };
   cache.set(domain, entry);
 
-  /** `definitive` false: a timeout, which says nothing lasting about the merchant. */
-  const settle = (status: Entry['status'], definitive = true) => {
+  const settle = (status: Entry['status']) => {
     // First outcome wins: a load that lands after the timeout is ignored.
-    if (entry.status !== 'loading') return;
+    if (entry.status !== 'loading') return false;
     window.clearTimeout(timer);
     entry.status = status;
-    // Persist only what the merchant's answer says: a loaded logo, or a
-    // refusal while the browser is online. A timeout or an offline failure
-    // is about this visit's network, not the merchant, and is not recorded.
-    if (definitive && (status === 'loaded' || navigator.onLine)) {
-      writeOutcome(domain, status === 'loaded');
-    }
+    // A loaded logo is an answer about the merchant and is recorded at once.
+    // A failure is not recorded here: see image.onerror.
+    if (status === 'loaded') writeOutcome(domain, true);
     for (const notify of entry.listeners) notify();
     entry.listeners.clear();
+    return true;
   };
 
   const image = new Image();
   image.decoding = 'async';
   image.onload = () => settle(image.naturalWidth > 0 ? 'loaded' : 'failed');
-  image.onerror = () => settle('failed');
+  image.onerror = () => {
+    // The lettermark stays either way. Only the provider saying "no logo" is
+    // remembered; a network failure is not an answer about the merchant.
+    if (!settle('failed')) return;
+    void providerHasNoLogo(entry.url).then((none) => {
+      if (none) writeOutcome(domain, false);
+    });
+  };
   const timer = window.setTimeout(() => {
     image.src = '';
-    settle('failed', false);
+    settle('failed');
   }, LOGO_TIMEOUT_MS);
   image.src = entry.url;
   return entry;

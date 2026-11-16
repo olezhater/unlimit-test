@@ -27,8 +27,8 @@ slow or refused logo request falls back the same way.
 
 Logo lookups are cached as outcomes, never as images. Within a session a merchant is requested
 once. Across sessions, `localStorage` keeps one small record per merchant — whether it had a
-logo and when that was checked — for seven days (at most 200 merchants), so a merchant known to
-have no logo is not requested again; image bytes stay in the browser's own HTTP cache. With
+logo and when that was checked — for seven days (at most 200 merchants), so a merchant the provider
+said it has no logo for (a 404) is not requested again, while a network failure is never stored and is retried on the next visit. That first half is tested with mocked responses only: reading a real 404 depends on a CORS header the provider may or may not send, and it has not been exercised against the live API. If the 404 is not readable, nothing is stored and the missing logo is re-requested each visit — also correct, and the only outcome that is certain (spec `logos.cacheVerification`); image bytes stay in the browser's own HTTP cache. With
 storage unavailable the app falls back to the in-memory cache and behaves the same. A `VITE_` variable is compiled into the
 client bundle, so the id is visible to anyone who loads a deployed build. Brandfetch client ids
 are designed to be public, but restrict yours to your domain in the Brandfetch dashboard.
@@ -41,7 +41,7 @@ details panel is a persistent column when the frame is 1440px or wider (it alway
 transaction, and widens with Full width) and a drawer below that.
 `?chrome=off` hides the bar.
 
-**Download statement** (top right) and the details panel's actions are stubs: pressing one shows "Not implemented in this prototype" in the bar's dark style (it stays
+**Download statement** (top right), the details panel's actions, and the empty and error states' way-out actions (Make a transfer, Contact support) are stubs: pressing one shows "Not implemented in this prototype" in the bar's dark style (it stays
 under `?chrome=off`, since it marks the stub's limit) and generates nothing.
 
 ## The spec
@@ -90,10 +90,11 @@ npx playwright install chromium
 node scripts/capture-states.mjs
 ```
 
-One PNG per state at 1440×900 into `screenshots/`, the list at 1280, 1440 and Full width into
-`screenshots/widths/`, the details drawer (1280) and filters drawer into `screenshots/drawers/`,
-and desaturated renders of the list and filtered list into `screenshots/greyscale/` — the four marked statuses must stay distinct from each other and from the
-unmarked Completed rows with the colour removed. Brandfetch refuses headless browsers, so captured avatars show lettermarks. The script creates
+One PNG per state at 1440×900 into `screenshots/`; the list at 1280, 1440 and Full width, at
+rest and with the heading pinned, into `screenshots/widths/`; the details drawer (1280), the
+filters drawer, the Recipient or sender list (1280 and 1440), the account and Date dropdowns, a
+focused field and the Download statement notice into `screenshots/drawers/`; and desaturated renders of the list and filtered list into `screenshots/greyscale/` — the four marked statuses must stay distinct from each other and from the
+unmarked Completed rows with the colour removed. Brandfetch refuses headless user agents, so every captured avatar shows its lettermark: that is the provider's behaviour and the fallback path working, not a broken integration. The logo path is verified manually: the deployed build at unlimit-test.netlify.app loads real merchant logos in a normal browser (Stripe, Upwork, Hostinger and Octopus Energy among them). The script creates
 `screenshots/` itself; the folder is generated output and is not committed.
 
 ## Third-party assets
@@ -128,7 +129,7 @@ unmarked Completed rows with the colour removed. Brandfetch refuses headless bro
 
 ### What didn't
 
-**Self-reported numbers.** Contrast ratios were written from estimate rather than measurement and corrected only when challenged. The rule now says measured, not estimated, and the measurements are recorded in `tokens.css` — including four places where the base values fall below WCAG thresholds and this prototype deliberately departs from them.
+**Self-reported numbers.** Contrast ratios were written from estimate rather than measurement and corrected only when challenged. The rule now says measured, not estimated, and the measurements are recorded in `tokens.css` — including three places where the base values fall below WCAG thresholds and this prototype deliberately departs from them.
 
 **Small-size judgement.** Two status icons that are clearly different at 24px collide at 16px. Only a side-by-side check at the real size caught it.
 
@@ -136,8 +137,12 @@ unmarked Completed rows with the colour removed. Brandfetch refuses headless bro
 
 ### What stayed mine
 
-Scope — what to cut and what the three hours were actually for. Where a requirement in the brief outranked a tidier idea, such as keeping the account filter after it had been argued away. And when a design decision changed what the project could claim: removing the mark from completed rows was right, and it meant the claim about colour-independence had to be rewritten rather than left standing.
+Scope — what to cut. Where a requirement in the brief outranked a tidier idea, such as keeping the account filter after it had been argued away. And when a design decision changed what the project could claim: removing the mark from completed rows was right, and it meant the claim about colour-independence had to be rewritten rather than left standing.
 
 ### Known limits
 
-Merchant logos come from the Brandfetch Logo API; the client id is a public, build-time value that should be restricted to the deployment's domain. In production that call would run server-side. Download and Repeat are intentional stubs that say so on use. Below 1280px the layout is deferred, with the intended behaviour recorded in the specification rather than half-built.
+Merchant logos come from the Brandfetch Logo API; the client id is a public, build-time value that should be restricted to the deployment's domain. In production that call would run server-side. The logo path is verified manually: the deployed build at unlimit-test.netlify.app loads real merchant logos in a normal browser (Stripe, Upwork, Hostinger and Octopus Energy among them). The automated captures and audits cannot see them, because the provider refuses headless browsers; screenshots showing lettermarks say nothing about the integration. Download statement, the details panel's actions (Download confirmation, Repeat, Contact support) and the two actions that lead out of this screen (Make a transfer, Contact support) are intentional stubs that say so on use. Below 1280px the layout is deferred, with the intended behaviour recorded in the specification rather than half-built.
+
+The layout is designed for a standard desktop window, not a short one: 900px tall is the reference and 768px the stated minimum (`meta.minHeight`; nothing enforces it). The details panel pins its header and its actions, so a short window squeezes the scrolling body between them. Measured at a 1440 frame for the tallest header (`tx_1005`): 316px at 900 tall, 184px at 768, 56px at 640 (68px for `tx_1007`, the longest fixture). At 640 it is not usable. Recorded as a known limit in `deferred.shortViewport`, not fixed.
+
+The negative logo cache is verified against mocked responses, not the live provider — see "Run it".

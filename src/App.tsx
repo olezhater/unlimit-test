@@ -38,6 +38,7 @@ const SKELETON_MIN_MS = 300;
 const emptyCopy = stateById.get('empty')?.copy ?? {};
 const noResultsCopy = stateById.get('filters_no_results')?.copy ?? {};
 const errorCopy = stateById.get('error')?.copy ?? {};
+const loadingCopy = stateById.get('loading')?.copy ?? {};
 const listState = stateById.get('list') as { defaultSelection?: { rule: string } } | undefined;
 
 /** meta.layout.panelBreakpoint — measured on the frame (breakpointSource). */
@@ -145,6 +146,16 @@ function HistoryPage({
     return () => window.clearTimeout(timer);
   }, []);
 
+  /* states.loading.copy.ariaLive — announced through a live region that is
+     always mounted and starts empty: a region inserted already holding its
+     text is not reliably announced. The text arrives one frame after mount
+     on first load, and again whenever Try again brings the skeleton back. */
+  const [liveReady, setLiveReady] = useState(false);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setLiveReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const setQuery = useCallback((next: Query) => navigate(serializeQuery(next)), [navigate]);
 
   /** defaultSelection.focus — selection by click or Enter leaves focus on the row. */
@@ -193,6 +204,13 @@ function HistoryPage({
   const shown = listVisible
     ? (selectedVisible ?? (mode === 'column' ? newest : undefined))
     : undefined;
+
+  /* states.loading.behaviour — while a list is loading at 1440+ the panel
+     column stays reserved, so the list keeps its width when the data and the
+     default selection arrive. The forced empty and error states have no
+     list coming, so nothing is reserved for them. */
+  const reservePanel =
+    isLoadingState && mode === 'column' && query.state !== 'empty' && query.state !== 'error';
 
   const openTx = useCallback(
     (id: string) => {
@@ -359,7 +377,17 @@ function HistoryPage({
     };
   }, []);
 
+  /* Try again swaps the block for the skeleton and back, which unmounts the
+     pressed button; without this, keyboard focus falls to the document. */
+  const retriedRef = useRef(false);
+  useEffect(() => {
+    if (retrying || !retriedRef.current) return;
+    retriedRef.current = false;
+    document.querySelector<HTMLElement>('[data-state="error"] .button--primary')?.focus();
+  }, [retrying]);
+
   const retry = () => {
+    retriedRef.current = true;
     setRetrying(true);
     window.setTimeout(() => {
       setRetrying(false);
@@ -391,9 +419,12 @@ function HistoryPage({
       </header>
 
       {/* defaultSelection.noResults — with nothing visible the panel column
-          collapses and the list takes the full width. */}
-      <div className="columns" data-mode={mode} data-panel={shown ? undefined : 'none'}>
+          collapses and the list takes the full width; loading keeps it. */}
+      <div className="columns" data-mode={mode} data-panel={shown || reservePanel ? undefined : 'none'}>
         <main className="main">
+          <div className="visually-hidden" role="status" aria-live="polite">
+            {liveReady && isLoadingState ? loadingCopy.ariaLive : ''}
+          </div>
           {/* listBehaviour.stickyBar — search, filters and chips pinned at the
               top of the list region. states.empty hides it, not disables it. */}
           {!isEmptyState ? (

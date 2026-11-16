@@ -1,7 +1,7 @@
 /**
- * states.details.copy.copyField — the copy control on a key-value row.
+ * states.details.copy.copyField / copyIban — the copy control on a key-value row.
  *
- * One control for every states.details.copyableFields entry: permanently visible
+ * One control on every row states.details.copyableFields.rule gives one: permanently visible
  * and in the tab order, never revealed on hover. "Copied" (states.details.copy.copied) shows only after the clipboard
  * write succeeded — a denied write announces nothing.
  */

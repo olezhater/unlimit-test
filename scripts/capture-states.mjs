@@ -10,16 +10,21 @@
  *
  * Also writes:
  *   screenshots/widths/list-<w>.png     the list at every prototypeAffordances.widths,
- *                                       plus list-full.png (Full width, a 1920 window)
+ *                                       plus list-full.png (Full width, a 1920 window),
+ *                                       and list-<w>-pinned.png with the heading pinned
  *   screenshots/drawers/*.png           the details drawer below the panel breakpoint
- *                                       (row click at 1280) and the filters drawer
+ *                                       (row click at 1280), the filters drawer, the
+ *                                       Recipient or sender list (1280 and 1440), the
+ *                                       account and Date dropdowns, a focused field and
+ *                                       the Download statement notice
  *   screenshots/greyscale/<id>.png      the list and filtered list through the
  *                                       product's own greyscale toggle (?grey=1),
  *                                       for qaChecklist[0]
  *
  * Logos: Brandfetch redirects headless Chromium to its hotlinking guidelines,
  * so captures show the lettermark fallback for every merchant. That is the
- * fallback path working, not a defect; logos are checked in a real browser.
+ * fallback path working, not a defect; logos are checked in a real browser
+ * (verified on the deployed build, spec logos.verification).
  *
  * The dev server must already be running (npm run dev). Playwright must be
  * installed — see README. This script installs nothing.
@@ -189,7 +194,7 @@ for (const w of [minWidth, viewport.width]) {
   });
 }
 // accountScope — the header listbox open, keyboard-highlighted on an option,
-// the third of the three dropdowns (spec `dropdowns`).
+// the first of the three dropdowns (spec `dropdowns`).
 await capture({
   name: 'account scope list',
   route: withParams(list.route, { chrome: 'off' }),
@@ -202,7 +207,7 @@ await capture({
     await page.keyboard.press('ArrowDown');
   },
 });
-// filters.date in the toolbar — the third dropdown, open, keyboard-highlighted.
+// filters.date in the toolbar — the second dropdown, open, keyboard-highlighted.
 await capture({
   name: 'date dropdown',
   route: withParams(list.route, { chrome: 'off' }),

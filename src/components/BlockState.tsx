@@ -2,6 +2,8 @@
  * The centred block shared by empty, no-results and error. Copy comes from the
  * state's own `copy` object; nothing is authored here.
  */
+import { StubButton } from './StubButton.tsx';
+
 export function BlockState({
   id,
   headline,
@@ -26,16 +28,17 @@ export function BlockState({
       {body ? <p className="block__body">{body}</p> : null}
       {primaryAction || secondaryAction ? (
         <div className="block__actions">
-          {primaryAction ? (
+          {/* An action with no handler leaves this screen for a flow the
+              prototype does not build (Make a transfer, Contact support): a
+              stub that says so on use (prototypeAffordances.stubRule), never
+              a button that silently does nothing. */}
+          {primaryAction && onPrimary ? (
             <button type="button" className="button button--primary" onClick={onPrimary}>
               {primaryAction}
             </button>
           ) : null}
-          {secondaryAction ? (
-            <button type="button" className="button button--secondary">
-              {secondaryAction}
-            </button>
-          ) : null}
+          {primaryAction && !onPrimary ? <StubButton label={primaryAction} primary /> : null}
+          {secondaryAction ? <StubButton label={secondaryAction} /> : null}
         </div>
       ) : null}
     </div>

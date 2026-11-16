@@ -1,8 +1,8 @@
 /**
  * toolbar.download — "Download statement", a single borderless control at the
  * top right of the header row (toolbar.download.placement). A stub under
- * prototypeAffordances.stubRule: pressing it shows the stub notice below it
- * and changes nothing else.
+ * prototypeAffordances.stubRule: pressing it shows the stub notice beside it,
+ * to its left (toolbar.download.stub), and changes nothing else.
  */
 import { DOWNLOAD } from '../spec/copy.ts';
 import { StubNotice } from './StubNotice.tsx';

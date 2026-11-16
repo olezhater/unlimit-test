@@ -14,7 +14,7 @@
  * heavy. `strokeWidth` overrides the token for one icon; nothing uses it.
  *
  * Every icon is decorative to assistive technology (aria-hidden). Where an icon
- * carries meaning, its container holds the name: a button's aria-label, the
+ * carries meaning, its container holds the name: a button's aria-label, or
  * a row's aria-label (which also names Completed, drawn with no mark).
  */
 import arrowDownLeft from '../icons/arrow-down-left.svg?raw';

@@ -6,7 +6,7 @@
  * Every state in the spec is reachable by typing its route, and opening or
  * closing the details panel writes to the URL.
  */
-import { spec, stateById } from '../spec/spec.ts';
+import { currencyOptions, spec, stateById, statusOptions, typeOptions } from '../spec/spec.ts';
 
 type ForcedState = 'empty' | 'loading' | 'error';
 
@@ -60,6 +60,14 @@ export function parseQuery(search: string): Query {
   const p = new URLSearchParams(search);
   const forced = p.get('state');
   const frame = Number(p.get('frame'));
+  // filters.amount.rangeOrder, filters.date.rangeOrder — a range entered in
+  // reverse is read in order, whichever path wrote it (Apply or a typed URL).
+  const [amountMin, amountMax] = inOrder(
+    normaliseAmount(p.get('amountMin')),
+    normaliseAmount(p.get('amountMax')),
+    (a, b) => Number(a) > Number(b),
+  );
+  const [dateFrom, dateTo] = inOrder(isoDay(p.get('dateFrom')), isoDay(p.get('dateTo')), (a, b) => a > b);
   return {
     state: forced === 'empty' || forced === 'loading' || forced === 'error' ? forced : null,
     tx: p.get('tx'),
@@ -69,24 +77,53 @@ export function parseQuery(search: string): Query {
     chrome: p.get('chrome') === 'off' ? 'off' : null,
     frame: PROTOTYPE_WIDTHS.includes(frame) ? frame : null,
     grey: p.get('grey') === '1',
-    status: list(p, 'status'),
-    currency: list(p, 'currency'),
-    type: list(p, 'type'),
+    // Only values the drawer offers: an unknown word in the URL is no filter,
+    // never a chip that prints it back.
+    status: known(list(p, 'status'), statusOptions.map((s) => s.id)),
+    currency: known(list(p, 'currency'), currencyOptions),
+    type: known(list(p, 'type'), typeOptions.map((t) => t.id)),
     // "All" is the resting state of both, never a constraint.
     counterparty: p.get('counterparty') === COUNTERPARTY_ALL ? null : p.get('counterparty'),
-    amountMin: normaliseAmount(p.get('amountMin')),
-    amountMax: normaliseAmount(p.get('amountMax')),
+    amountMin,
+    amountMax,
     // Only a preset that is itself a range: never All (no constraint), never
     // Custom (it names no range), never an unknown word — each of those would
     // leave the radio group with nothing selected and a chip that filters nothing.
-    date: datePreset(p.get('date')),
-    dateFrom: p.get('dateFrom'),
-    dateTo: p.get('dateTo'),
+    // filters.date.toolbar — one value, one chip: explicit bounds are Custom,
+    // so they replace a preset rather than sit beside it.
+    date: dateFrom || dateTo ? null : datePreset(p.get('date')),
+    dateFrom,
+    dateTo,
     q: p.get('q'),
   };
 }
 
-export function serializeQuery(q: Query): string {
+function known(values: string[], options: readonly string[]): string[] {
+  return values.filter((value) => options.includes(value));
+}
+
+/** A custom date bound: a real calendar day written YYYY-MM-DD, or nothing. */
+function isoDay(value: string | null): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : null;
+}
+
+/** Both bounds present and reversed: swap them. One bound alone is left as it is. */
+function inOrder(
+  low: string | null,
+  high: string | null,
+  reversed: (low: string, high: string) => boolean,
+): [string | null, string | null] {
+  return low && high && reversed(low, high) ? [high, low] : [low, high];
+}
+
+export function serializeQuery(query: Query): string {
+  // rangeOrder — written in order too, so the address bar never holds a
+  // reversed range.
+  const [amountMin, amountMax] = inOrder(query.amountMin, query.amountMax, (a, b) => Number(a) > Number(b));
+  const [dateFrom, dateTo] = inOrder(query.dateFrom, query.dateTo, (a, b) => a > b);
+  const q = { ...query, amountMin, amountMax, dateFrom, dateTo };
   const p = new URLSearchParams();
   if (q.state) p.set('state', q.state);
   if (q.scope) p.set('account', q.scope);

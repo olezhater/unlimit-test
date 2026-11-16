@@ -1,13 +1,16 @@
 {
   "meta": {
     "name": "Transaction history — web",
-    "version": "1.21.0",
+    "version": "1.26.0",
     "platform": "web",
     "minWidth": 1280,
+    "minHeight": 768,
+    "referenceHeight": 900,
+    "heightNote": "The layout is designed for a standard desktop window, not a short one. 900px tall is the reference: every capture and every qaChecklist item is taken there. 768px is the minimum it is designed for; nothing is built for less, and nothing enforces the minimum (deferred.shortViewport).",
     "locale": "en",
     "now": "2026-11-14T12:00:00Z",
     "nowNote": "The prototype treats this as the current moment. Relative day headers ('Today', 'Yesterday') and all expected-arrival copy are computed from it, never from the system clock. This keeps screenshots deterministic and keeps the relative header forms reachable.",
-    "description": "Single source of truth for the transaction history list and details panel. The prototype renders states, copy and fixtures from this file; the written specification is generated from it. If a string is visible in the UI, it lives here, not in a component.",
+    "description": "Single source of truth for the transaction history list and details panel. The prototype renders states, copy and fixtures from this file, and this file is the written specification: no separate document is generated from it. If a string is visible in the UI, it lives here, not in a component.",
     "amountConvention": {
       "rule": "A transaction's `amount` is always the total movement on the user's account: what was debited, or what was credited. Fees are inside that figure, never added on top of it.",
       "example": "tx_1004 has amount -251.20 and a child fee of 1.20. The recipient receives 250.00; the account was debited 251.20.",
@@ -15,7 +18,7 @@
     },
     "layout": {
       "pattern": "sidebar-list-responsive-panel",
-      "rationale": "Product decision. A persistent sidebar sits on the left. At a frame width of 1440px and above, the details panel is a persistent column beside the list that always holds a transaction while any row is visible (states.list.defaultSelection.wide). Below 1440px there is no panel until a row is clicked; it then opens as a right-side drawer over the content, with a scrim behind it. One panel component renders in both modes. When nothing is visible the panel column collapses and the list takes the full width. Known cost: below 1440px the open drawer covers the right side of the list, the amount column included.",
+      "rationale": "Product decision. A persistent sidebar sits on the left. At a frame width of 1440px and above, the details panel is a persistent column beside the list that always holds a transaction while any row is visible (states.list.defaultSelection.wide). Below 1440px there is no panel until a row is clicked; it then opens as a right-side drawer over the content, with a scrim behind it. One panel component renders in both modes. When nothing is visible the panel column collapses and the list takes the full width; while loading it stays reserved (states.loading.behaviour). Known cost: below 1440px the open drawer covers the right side of the list, the amount column included.",
       "sidebarWidth": 240,
       "sidebarCollapse": "The sidebar keeps icons and labels at every width. At 1280px the panel is a drawer, so the list keeps the full width beside the sidebar and nothing needs to collapse.",
       "panelBreakpoint": 1440,
@@ -23,7 +26,7 @@
         "persistent": "Frame width 1440px and above. A column beside the list with panelWidth as its floor: at a 1440 frame it is 480 and the list takes the rest (648). As the frame widens past the point where the list's three-to-two share exceeds that, both columns grow, list to panel three parts to two. It always holds a transaction while the visible set is non-empty and has no close control. Swapping the transaction changes no column width.",
         "drawer": "Frame width below 1440px. Opens on a row click only, as a right-side drawer, panelWidth wide, over the content, with a scrim. Escape, the close control and a scrim click close it. It also closes when its transaction leaves the visible set. A ?tx= URL also opens it: the details state must stay reachable by URL."
       },
-      "breakpointSource": "The width of the application frame, not of the browser window, so the prototype's width presets exercises both modes in one window.",
+      "breakpointSource": "The width of the application frame, not of the browser window, so the prototype's width presets exercise both modes in one window.",
       "listWidth": "fluid, min 640",
       "panelWidth": 480,
       "panelWidthNote": "480 is the drawer's width and the persistent column's minimum. Above a 1440 frame the column widens with the frame (Full width).",
@@ -146,7 +149,8 @@
       "showWhen": "adds-information",
       "detailHelperFallback": "Expected by the end of the next business day.",
       "primaryAction": null,
-      "secondaryAction": "Get help",
+      "secondaryAction": "Contact support",
+      "repeat": null,
       "timeline": {
         "steps": [
           "Created",
@@ -178,11 +182,11 @@
         "badge": "none in the list: no icon and no label. The label stays in the row's accessible name. The details panel badge shows the check-circle and the label.",
         "markVisible": false
       },
-      "detailHelperText": "Delivered on {deliveredAt}.",
+      "detailHelperText": null,
       "showWhen": "never",
-      "detailHelperFallback": "Delivered on {createdAt}.",
-      "primaryAction": "Download",
-      "secondaryAction": "Get help",
+      "primaryAction": "Download confirmation",
+      "secondaryAction": "Contact support",
+      "repeat": "secondary",
       "timeline": {
         "steps": [
           "Created",
@@ -201,7 +205,8 @@
           "Delivered": "deliveredAt"
         }
       },
-      "specNote": "In a real history almost every transaction has completed, so a mark present on nearly every row is visual noise rather than information. The four states worth noticing — In progress, Rejected, Cancelled, Failed — are the ones that are marked, and Completed is identified as the only unmarked state: no icon and no label in the row, its label kept in the row's accessible name so a screen reader still hears it. The details panel badge keeps the check-circle and the visible label."
+      "specNote": "In a real history almost every transaction has completed, so a mark present on nearly every row is visual noise rather than information. The four states worth noticing — In progress, Rejected, Cancelled, Failed — are the ones that are marked, and Completed is identified as the only unmarked state: no icon and no label in the row, its label kept in the row's accessible name so a screen reader still hears it. The details panel badge keeps the check-circle and the visible label.",
+      "showWhenNote": "Completed carries no helper line: it would only repeat the timeline's last step and its timestamp."
     },
     {
       "id": "rejected",
@@ -221,7 +226,8 @@
       "reasonOverride": true,
       "reasonOverrideNote": "When a fixture carries a `reason`, that string replaces this helper text entirely — the two never render together. The helper text above is the fallback for a rejection with no specific reason on record.",
       "primaryAction": null,
-      "secondaryAction": "Get help",
+      "secondaryAction": "Contact support",
+      "repeat": "secondary",
       "timeline": {
         "steps": [
           "Created",
@@ -259,6 +265,7 @@
       "showWhen": "adds-information",
       "primaryAction": null,
       "secondaryAction": null,
+      "repeat": "primary",
       "timeline": {
         "steps": [
           "Created",
@@ -292,22 +299,20 @@
       "detailHelperText": "A technical error stopped this payment. The money never left your account.",
       "showWhen": "adds-information",
       "primaryAction": null,
-      "secondaryAction": "Get help",
+      "secondaryAction": "Contact support",
+      "repeat": "primary",
       "timeline": {
         "steps": [
           "Created",
-          "Pending",
           "Failed"
         ],
-        "currentStep": 2,
+        "currentStep": 1,
         "completedSteps": [
-          0,
-          1
+          0
         ],
         "terminalStep": "Failed",
         "timestampSource": {
           "Created": "createdAt",
-          "Pending": null,
           "Failed": "failedAt"
         }
       },
@@ -344,8 +349,9 @@
         "failed": "Failed"
       }
     },
-    "stepsNote": "The brief models the timeline as Created → Pending → Delivered. That model is kept; only the labels change. The labels name what happened to the money rather than the state of the record, as Revolut Business ('Verified by Revolut', 'Sent to recipient's bank', 'Received by recipient's bank') and Wise ('We paid out your USD', 'Your transfer's complete') do, because the question the user brings to a pending transfer is where their money is, not which internal state it holds. The three positions still map one-to-one to the brief's steps.",
-    "accordion": "Collapsed by default, showing only the current step with its timestamp. Expanding reveals the full timeline. Kept open when the status is not Completed — a user looking at a pending or failed payment came for exactly those steps.",
+    "terminal": "A terminal status ends the timeline on its own step (steps.terminalSteps), and the step before it is shown only if it happened. Rejected keeps the middle step: the payment reached the recipient's bank and was refused there (Created, the type's second step, Rejected). Cancelled and Failed end directly after Created — two steps — because the money never left the account, so no step may say it was sent. statuses[].timeline.steps carries this per status; the per-type labels above apply by position to the steps a status keeps.",
+    "stepsNote": "The brief models the timeline as Created → Pending → Delivered. That model is kept; only the labels change. The labels name what happened to the money rather than the state of the record, as Revolut Business ('Verified by Revolut', 'Sent to recipient's bank', 'Received by recipient's bank') and Wise ('We paid out your USD', 'Your transfer's complete') do, because the question the user brings to a pending transfer is where their money is, not which internal state it holds. Where a payment runs its course the three positions still map one-to-one to the brief's steps; a Cancelled or Failed payment stops after the first (timelineRules.terminal).",
+    "accordion": "Collapsed by default, showing only the current step: its label, and beneath it, on a line of its own, its date and time where the step records one. Expanding reveals the full timeline. Kept open when the status is not Completed — a user looking at a pending or failed payment came for exactly those steps. Expanded, each step keeps its label and time as they are.",
     "expandedByDefault": [
       "in_progress",
       "rejected",
@@ -370,21 +376,21 @@
       "included": "Only transactions whose status has countsInDayTotal true — that is, Completed. Pending money has not settled; rejected, cancelled and failed money never moved.",
       "emptyCase": "A day whose transactions are all pending or terminal shows no total. The header renders with the date alone.",
       "resolves": "An earlier version asked for a total 'in the account's display currency'. No such field exists, the fixtures mix currencies within a day, and the file carries one exchange rate — so that total was not computable without inventing data.",
-      "narrowing": "The totals count only the movements the current view narrows to — one rule for the account scope and the currency filter. Under a single-account scope a movement counts only if it passed through that account; under a currency filter, only if it is in a selected currency. A conversion is two movements, its source leg and its target leg, and each counts only if it passes both: a GBP scope or a GBP currency filter shows the GBP leg and not the EUR one."
+      "narrowing": "One rule decides both the rows and the totals, for the account scope and the currency filter alike. A conversion is two movements — its source leg and its target leg; every other transaction is one. A transaction is shown when at least one of its legs satisfies every active constraint on its own: under a single-account scope the leg passed through that account, under a currency filter the leg is in a selected currency. Different legs satisfying different constraints is not a match — under account Main GBP with currency EUR, tx_1003's GBP leg fails the currency test and its EUR leg fails the account test, so the conversion is not in the filtered set and no day header renders for it. A day total counts exactly the legs that pass, so a header can never total a leg whose row is absent, and a row never sits under a header that ignores it: a GBP scope or a GBP currency filter shows the GBP leg and not the EUR one."
     },
     "rowAnatomy": {
       "leading": "40px avatar: the merchant logo fetched by merchantDomain; else, for a named counterparty, a lettermark circle with a type badge; for a non-personal counterparty (a conversion, an account fee), its category glyph. See edgeCases.no_logo.",
       "primary": "Counterparty name, or 'Account A to Account B' for transfers between own accounts",
       "meta": "Status mark (the four exception statuses only) · time · note, truncated to one line. With no note, nothing follows the time.",
       "trailing": "Signed amount, bold. For conversions this is the credited target amount.",
-      "trailingSecondary": "One value only, by this priority: (1) source amount in grey, for conversions; (2) 'incl. {x} {currency} fee', for payments carrying a child fee; (3) nothing.",
+      "trailingSecondary": "One value only, by this priority: (1) source amount in grey, for conversions; (2) the fee line of feeModel.rules[1], for payments carrying a child fee; (3) nothing.",
       "metaNote": "The meta line shows the note, never the payment reference. The reference is an identifier the user looks up — it lives in the details panel, beside its copy control. The note is what the user wrote to recognise the transaction later, and recognition is the row's job. A note edited in the panel shows in the row at once (session state, noteRule). Search still covers both (search.scope)."
     },
     "sorting": "Date descending. Not user-sortable in v1.",
     "stickyBar": "The toolbar (search field, the Date dropdown and the Filters button) and the active filter chips stay pinned at the top of the list region while the list scrolls, beneath the collapsed heading (headingCollapse). In a history long enough to scroll, the controls that narrow it must stay reachable without scrolling back. Day group headers stick beneath the bar while their group is in view. The rule under the bar renders under the same condition as the result count — a filter or search active, never the account alone (accountScope.scopeNotFilter) — and separates the filters from the list; with no filter active it would separate nothing.",
     "pagination": "All transactions render. Pagination and a back-to-top affordance are deferred: the history in this prototype runs to a few screens, the toolbar and day headers stay pinned while it scrolls, and search and filters narrow it faster than paging would. Paging earns its cost once a history spans months.",
     "headingCollapse": {
-      "rest": "At rest the page heading — 'Transaction history' and the account control beside it — is the clear top of the page, one type step above the previous title size (--font-size-headline).",
+      "rest": "At rest the page heading — 'Transactions' and the account control beside it — is the clear top of the page, one type step above the previous title size (--font-size-headline).",
       "pinned": "On scroll the heading shrinks and pins above the search row, to --font-size-heading-pinned: between the resting size and the Download statement control's size — still clearly reduced, still unmistakably the page's heading, not a caption. The account control scales with the heading and stays beside it in both states.",
       "spacing": "The gap between the heading and the search row tightens when pinned, to none of its own: pinned, the heading row and the search row read as one band. At rest they stay separate.",
       "stacking": "The heading pins above the search row in the same stacking context; the two never overlap, and day group headers keep pinning beneath both.",
@@ -437,27 +443,29 @@
       "route": "/?state=loading",
       "name": "Loading",
       "trigger": "First load of the page. Not shown on filter changes, which update in place.",
-      "behaviour": "Skeleton that mirrors the real layout: two day groups of three rows each, with blocks sized to the real avatar, title, meta and amount. Group headers are skeletons too. No spinner. The skeleton shows a fixed count, never a guess at the real number, and holds for a minimum of 300ms to avoid a flash on fast connections.",
+      "behaviour": "Skeleton that mirrors the real layout: two day groups of three rows each, with blocks sized to the real avatar, title, meta and amount. Group headers are skeletons too. No spinner. At 1440px and above the panel column stays reserved while loading and the skeleton occupies the list column only, so the list does not change width when the data and the default selection arrive. If the load resolves to nothing visible, the column collapses then (defaultSelection.noResults). The skeleton shows a fixed count, never a guess at the real number, and holds for a minimum of 300ms to avoid a flash on fast connections.",
       "copy": {
         "ariaLive": "Loading your transactions"
       },
-      "specNote": "No public reference exists for this state across the products reviewed. The design decision is to reserve layout rather than announce waiting: the skeleton's job is to prevent reflow when data arrives."
+      "specNote": "No public reference exists for this state across the products reviewed. The design decision is to reserve layout rather than announce waiting: the skeleton's job is to prevent reflow when data arrives.",
+      "skeletonFill": "The skeleton blocks are drawn light, a placeholder rather than content: they must not read as text or controls. A placeholder shape carries no information a person reads, so the 3:1 rule for control boundaries and meaningful graphics (WCAG 1.4.11) does not apply to it; the value and its measurement are recorded at --skeleton-fill in tokens.css. A non-visual user is served by the live region (copy.ariaLive), not by the grey: it is a persistent polite status region that receives the text once loading begins, so it is announced on first load and again on Try again."
     },
     {
       "id": "list",
       "route": "/",
       "name": "List",
       "trigger": "Default state with data.",
-      "behaviour": "Day-grouped list, all five statuses present, fee nesting active, conversions showing both amounts. Clicking a row selects it: at 1440px and above it fills the persistent panel column, below 1440px it opens the drawer. The transaction id is written into the URL.",
+      "behaviour": "Day-grouped list, all five statuses present, fee nesting active, conversions showing both amounts. Clicking a row selects it: at 1440px and above it fills the persistent panel column, below 1440px it opens the drawer. The transaction id is written into the URL. The selected row is marked by a bar at its leading edge, as the sidebar marks the current item, as well as by its fill: the fill alone measures 1.14:1 against the page and disappears in greyscale, and colour is never the first channel (statusDifferentiation.colourRole).",
       "copy": {
-        "pageTitle": "Transaction history"
+        "pageTitle": "Transactions",
+        "pageTitleNote": "The page title matches the sidebar item it is reached from (navigation.items, 'Transactions'), so the place the user clicked and the page they land on carry one name. The document title is injected from this string at build time."
       },
       "defaultSelection": {
         "rule": "newest",
         "wide": "At 1440px and above the panel column always shows a transaction. On load the newest is selected; when the current selection leaves the visible set — filtered out, searched away — the newest remaining transaction is selected instead. There is no empty panel and no close control at this width.",
         "narrow": "Below 1440px details open in a drawer on click only. Nothing is selected on load. When the current selection leaves the visible set, the drawer closes.",
         "focus": "Default selection on load does not move focus. Focus stays at the start of the document, so a keyboard or screen-reader user meets the controls in page order: the account dropdown, Download statement, then search, the Date dropdown and Filters. Selection by click or Enter still leaves focus on the row, and Escape or the drawer's close control returns focus to the originating row.",
-        "noResults": "When the visible set is empty — the empty state, no-results, loading or error — the panel column collapses and the list takes the full width.",
+        "noResults": "When the visible set is empty — the empty state, no-results or error — the panel column collapses and the list takes the full width. Loading is not one of these: see states.loading.behaviour.",
         "deepLink": "A ?tx= URL opens the drawer below 1440px: the details state must stay reachable by URL."
       }
     },
@@ -482,7 +490,7 @@
       "copy": {
         "headline": "No transactions match your filters",
         "body": "Try a different date range, or clear some filters to see more.",
-        "primaryAction": "Clear all filters"
+        "primaryAction": "Clear all"
       },
       "specNote": "Both values in this route are selectable in the UI — Rejected exists as a status and USD as a currency — but no fixture is both. An earlier version used currency=JPY, which no fixture carried, so the state was reachable only by typing the URL and no in-product path produced it."
     },
@@ -491,46 +499,31 @@
       "route": "/?tx=tx_1004",
       "name": "Transaction details",
       "trigger": "A row is selected.",
-      "behaviour": "The selected transaction renders in the details panel. At 1440px and above it is a persistent column that always holds a transaction and has no close control; selecting another row swaps it. Below 1440px it is a drawer with a scrim, closed with Escape, its close control or a click on the scrim. The pinned header opens with one line: the counterparty avatar on the left and the status badge aligned right on the same line — in the drawer, left of the close control on that same line. Beneath it follow the amount, the counterparty, and directly under the counterparty the status block (timelineRules.accordion) with no heading of its own — collapsed it is the current step and its date and time as a plain line, which is why the header carries no separate date. The scrolling body carries the entries of sections[] that apply to the transaction, in that order. The actions sit in a footer pinned to the panel's bottom edge, outside the scroll, in the column and in the drawer alike: the status's primaryAction, the Repeat action (repeatAction) where it applies, then the status's secondaryAction. A transaction with none of them has no footer. A stub notice from a footer action opens above its button, inside the panel.",
+      "behaviour": "The selected transaction renders in the details panel. At 1440px and above it is a persistent column that always holds a transaction and has no close control; selecting another row swaps it. Below 1440px it is a drawer with a scrim, closed with Escape, its close control or a click on the scrim. The pinned header opens with one line: the counterparty avatar on the left and the status badge aligned right on the same line — in the drawer, left of the close control on that same line. Beneath it follow the amount, the counterparty, and directly under the counterparty the status block (timelineRules.accordion) with no heading of its own — collapsed it shows the current step as plain text: its label, with the date and time on the line beneath where the step records one (timelineRules.timestamps, timelineRules.accordion). That is why the header carries no separate date. Where the status has a helper line (statuses[].detailHelperText, or the fixture's own reason), it sits directly beneath the status block, inside the pinned header: the explanation and the status it explains stay together and neither scrolls away from the other. The scrolling body carries the entries of sections[] that apply to the transaction, in that order. The actions sit in a footer pinned to the panel's bottom edge, outside the scroll, in the column and in the drawer alike: the status's primaryAction, the Repeat action (repeatAction) where it applies, then the status's secondaryAction. A transaction with none of them has no footer. A stub notice from a footer action opens above its button, inside the panel.",
       "focusBehaviour": "Persistent mode: selecting a row by click or Enter leaves focus on the row, and default selection moves no focus (states.list.defaultSelection.focus). The panel is a column, not a dialog: there is no focus trap and the list stays interactive. Drawer mode: the drawer is a modal dialog, so focus moves to its close control on open and stays inside it until it closes; Escape, the close control and the scrim return focus to the originating row.",
       "copy": {
         "close": "Close",
-        "copyReference": "Copy payment reference",
         "copied": "Copied",
         "timelineExpand": "More",
         "timelineCollapse": "Hide",
         "copyField": "Copy {label}",
-        "copyFieldCase": "{label} is interpolated in lower case — 'Copy from', 'Copy account number' — so the name reads as a sentence. A word written wholly in capitals (an acronym such as IBAN) keeps its case.",
+        "copyIban": "Copy {label} IBAN",
+        "copyFieldCase": "{label} is interpolated in lower case — 'Copy recipient or sender', 'Copy payment reference' — so the name reads as a sentence; copyIban fills the same way — 'Copy from IBAN', 'Copy to IBAN'. A word written wholly in capitals (an acronym such as IBAN) keeps its case.",
         "notePlaceholder": "Add a note to help you find this later"
       },
       "copyableFields": {
-        "fields": [
-          {
-            "section": "details",
-            "field": "fromAccount"
-          },
-          {
-            "section": "details",
-            "field": "toAccount"
-          },
-          {
-            "section": "details",
-            "field": "reference"
-          },
-          {
-            "section": "details",
-            "field": "counterpartyName"
-          },
-          {
-            "section": "details",
-            "field": "counterpartyAccount"
-          },
-          {
-            "section": "details",
-            "field": "transactionId"
-          }
-        ],
-        "principle": "Copy is offered for values that get transcribed into a support ticket, a bank form or a message — identifiers and names, the transaction ID among them — and for nothing else. Amounts, breakdown lines, the exchange rate, dates and the status carry no copy control. Each listed field's label comes from fieldLabels; every control is permanently visible, never revealed on hover, because a hover-only control is invisible to keyboard users, on touch and in every screenshot.",
+        "rule": "A row carries a copy control only where there is a value a person transcribes somewhere else — into a bank form, a support ticket, a message. What is copied is that value: From and To copy the named party's IBAN where there is one and the displayed value where there is not (ibanRule), so an account label such as 'Main EUR' is never what lands on the clipboard.",
+        "copies": {
+          "fromAccount": "iban",
+          "toAccount": "iban",
+          "reference": "value",
+          "counterpartyName": "value",
+          "counterpartyAccount": "value",
+          "transactionId": "value"
+        },
+        "copiesNote": "'value' copies what the row shows. 'iban' is From and To: the IBAN of the party the row names where there is one, the displayed value where there is not (ibanRule). A field absent from this map — Bank, every amount and breakdown line — never carries a control.",
+        "ibanRule": "From and To always carry a copy control. It copies the IBAN of the party the row names where there is one — accounts[].iban for the user's own account, which always has one, counterparty.iban for a third party where the fixture carries it — and the displayed value where there is not (tx_1004's recipient, Hostinger International, has no IBAN on record, so its To row copies the name). An account label such as 'Main EUR' is never what is copied, because the user's own accounts always have an IBAN. The rule is simple on purpose: the earlier version left From without a control while Recipient or sender showed the same string with one — two identical values with different affordances on one screen. The control's name says what it actually copies: copy.copyIban ('Copy from IBAN') when it copies an IBAN, copy.copyField ('Copy to') when it copies the value shown.",
+        "principle": "Copy is offered for values that get transcribed into a support ticket, a bank form or a message — identifiers and names, the transaction ID among them — and for nothing else. Amounts, breakdown lines, the exchange rate, dates and the status carry no copy control. Every control is permanently visible, never revealed on hover, because a hover-only control is invisible to keyboard users, on touch and in every screenshot.",
         "control": "Icon only: no border and no background at rest; a visible hover state; the shared --focus-ring on keyboard focus; a hit area of at least 44 by 44 px around the smaller icon."
       },
       "sectionHeadings": {
@@ -554,9 +547,12 @@
             "reference",
             "counterpartyName",
             "counterpartyAccount",
+            "counterpartyBank",
             "transactionId"
           ],
-          "layout": "Every field is a key-value row: the fieldLabels label on the left, the value on the right. Each copyableFields entry carries a copy control beside the value; Payment reference is read-only — not editable, unlike Note (its own section below) — and copyable, its value wrapping in full (edgeCases.long_reference). A field the transaction lacks is omitted: Name and Account number only where there is a third party (not between_accounts, not an account-level fee), Payment reference only where the fixture carries one. Transaction ID is the last row, after Account number. The identifier is for support, not recognition: the user reading the panel is checking who, what and which reference, and the ID matters only once they are on the phone or filing a ticket, which comes after everything else — so the rows the user actually reads stay at the top. It shows fixtures[].displayId in the monospaced face (--font-family-mono) on one line, never wrapping, with its copy control. It is not shown in the list row, which is for recognising a transaction, not identifying it."
+          "layout": "Every field is a key-value row: the fieldLabels label on the left, the value on the right. A row that copyableFields.rule gives one carries a copy control beside the value; Payment reference is read-only — not editable, unlike Note (its own section below) — and copyable, its value wrapping in full (edgeCases.long_reference). There is no Date and time row: the date and time are in the pinned header's status block, beneath the step label (dateTimeInHeader). A field the transaction lacks is omitted: Recipient or sender, IBAN and Bank only where there is a third party (not between_accounts, not an account-level fee) and the fixture carries the value (counterparty.iban, counterparty.bank), Payment reference only where the fixture carries one. Transaction ID is the last row, after Bank. The identifier is for support, not recognition: the user reading the panel is checking who, what and which reference, and the ID matters only once they are on the phone or filing a ticket, which comes after everything else — so the rows the user actually reads stay at the top. It shows fixtures[].displayId in the monospaced face (--font-family-mono) on one line, never wrapping, with its copy control. It is not shown in the list row, which is for recognising a transaction, not identifying it.",
+          "dateTimeInHeader": "The brief asks the details panel to show the transaction's date and time. That requirement is satisfied by the pinned header, not by a Details row: the status block directly under the counterparty carries the date and time of the current step (timelineRules.timestamps), and expanded it dates every recorded step, Created (createdAt) included. A Details row repeated what the header already said, so it was removed on purpose. Do not re-add it as a missing item.",
+          "inProgressCollapsed": "Decided, not a gap: collapsed, an In progress payment's status block shows its current step (Pending) with no time, because Pending records none (timelineRules.timestamps). That state is complete as it is. A pending payment's useful date is not when it was created but when it is expected, and the helper line carries exactly that (statuses[0].detailHelperText, 'Expected by {expectedBy}.'), pinned directly beneath the status block: the step says what is happening and the line beneath says when it should end. Do not fill the step with the creation time or any other fallback date — it would be a less useful date in the place of the useful one. Expanded, Created keeps its own time."
         },
         {
           "id": "note",
@@ -568,9 +564,10 @@
       "sectionsRule": "The panel renders the sections above that apply, in this order. Section and row count vary by transaction by design — a conversion's Details holds From, To and Transaction ID; an account-level fee's holds From and Transaction ID; a plain transfer has no breakdown. Note renders on every transaction. Omitting beats rendering an empty heading or row.",
       "repeatAction": {
         "label": "Repeat",
-        "renderWhen": "every transaction whose type is not incoming — incoming money cannot be repeated by the recipient",
-        "supersedes": "statuses.cancelled 'Repeat transfer' and statuses.rejected / statuses.failed 'Try again': one action under one name. Whether it repeats a cancelled transfer or retries a failed one is already said by the status above it.",
-        "order": "After the status's primaryAction and before its secondaryAction; it is the primary button when the status has no primaryAction.",
+        "renderWhen": "outgoing payments whose status gives Repeat a standing (statuses[].repeat is not null). Not incoming money (the recipient cannot repeat it), not a conversion between the user's own accounts, not an account-level fee.",
+        "supersedes": "Earlier versions of this spec gave Cancelled a 'Repeat transfer' action and Rejected and Failed a 'Try again': one action under one name replaces them. Whether it repeats a cancelled transfer or retries a failed one is already said by the status above it.",
+        "order": "After the status's primaryAction and before its secondaryAction.",
+        "prominence": "Prominence says what the user should do next. A panel has at most one primary button, and it is the action the status recommends; every other action is secondary. statuses[].repeat is Repeat's standing under that rule. It is primary where repeating is the recommended next step and is expected to work: Failed (a technical error stopped the payment) and Cancelled (it was withdrawn before any money moved). It is secondary where repeating is possible but is not the recommendation: Completed, where the recommended action is the status's own primaryAction, and Rejected, where a bank declined the payment and repeating it unchanged repeats the decline (statuses[2].specNote). It is absent (null) where there is nothing to repeat yet: In progress, the payment is still on its way. A status with no recommended action shows no primary button at all, rather than promoting one by default.",
         "stub": "Does nothing in this prototype: it shows prototypeAffordances.stubNotice, as Download statement does (prototypeAffordances.stubRule)."
       },
       "noteRule": "A payment reference travels with the payment and appears on the recipient's bank statement; it is set when the payment is made and is never editable here. A note is private to the account holder, never leaves the account, and can be edited at any time. In this prototype a note is edited in session state only and is not persisted: it keeps every keystroke until the page reloads. It is not a stub — an editable field that discarded keystrokes would be worse than one that keeps them until reload. Editing a note changes no other field."
@@ -604,10 +601,9 @@
     "fromAccount": "From",
     "toAccount": "To",
     "reference": "Payment reference",
-    "counterpartyName": "Name",
-    "counterpartyAccount": "Account number",
-    "counterpartyBank": "Bank",
-    "note": "Note"
+    "counterpartyName": "Recipient or sender",
+    "counterpartyAccount": "IBAN",
+    "counterpartyBank": "Bank"
   },
   "filters": [
     {
@@ -617,7 +613,8 @@
       "all": "All",
       "placeholder": "All",
       "note": "The field defaults to All rather than empty, so its resting state says 'no constraint' instead of 'nothing entered'. It stays typeable: the list narrows as the user types, and a free-typed value that matches no counterparty filters to nothing rather than being silently ignored.",
-      "listNote": "The list is the application's own listbox, never the browser's autofill. 'All' is always its first entry and clears the constraint; selecting it produces no chip."
+      "listNote": "The list is the application's own listbox, never the browser's autofill. 'All' is always its first entry and clears the constraint; selecting it produces no chip. Its entries are the third parties in the history — every transaction that has a recipient or sender. A conversion between the user's own accounts and an account-level fee have none, so 'Main EUR to Main GBP' and 'Monthly plan fee' are not offered.",
+      "openBehaviour": "When the list opens, the current value (a counterparty, or 'All') moves into the placeholder and the field is emptied, ready to type: the user types over the selection instead of deleting it first. Typing narrows the full list, never the list as narrowed by the selected value, and highlights the first match; when nothing matches, nothing is highlighted. Only typing and the arrow keys (with Home and End) set the highlight, and aria-activedescendant follows it. Pointer hover is not a choice: it has its own visual treatment (a fill without the ring) and never moves the highlight, because the pointer can rest anywhere, including over a list the user is reading rather than choosing from, and committing what it happens to be under would discard what they typed. A click is a choice and commits its option. Tab has two halves, and both are the rule: if an option is highlighted, Tab commits that option — a highlight is a choice the user has already made, by typing or with the arrow keys, and discarding it on Tab would lose that work; if nothing is highlighted, Tab keeps the typed text as typed (filters.counterparty.note). Enter does the same. On opening, the current value is the highlighted option, so Tab before any typing or arrowing keeps it. Clicking away keeps typed text as typed. Closing without a choice — Escape, the chevron, or clicking away with nothing typed — restores the previous selection, and the field shows it again."
     },
     {
       "id": "amount",
@@ -633,7 +630,8 @@
         "max": "To"
       },
       "rangeSeparator": "An arrow (the vendored arrow-right glyph) sits between the two inputs, decorative to assistive technology, so the pair reads as one range rather than two unrelated numbers once both are filled — the placeholders that said so are gone by then.",
-      "inputNote": "Free numeric entry with a decimal keyboard (inputMode decimal) and no stepper arrows — a currency amount has no meaningful step of 1. Either '.' or ',' is accepted as the decimal separator."
+      "inputNote": "Free numeric entry with a decimal keyboard (inputMode decimal) and no stepper arrows — a currency amount has no meaningful step of 1. Either '.' or ',' is accepted as the decimal separator.",
+      "rangeOrder": "The two bounds are a range, not a minimum and a maximum that can contradict each other: bounds entered in reverse are swapped when the filter is applied and when it is read from the URL, so the URL never holds a reversed range, so 'From 500, To 100' filters 100 – 500. An inverted range can therefore never produce an empty list that looks like missing data."
     },
     {
       "id": "date",
@@ -652,8 +650,9 @@
         "to": "To"
       },
       "default": "All",
-      "defaultNote": "'All' means no date constraint and produces no filter chip. Reset returns the group to 'All'. A radio group with nothing selected is not a valid resting state.",
-      "toolbar": "Also surfaced in the toolbar as a dropdown left of Filters, with the same presets, 'All' included. It is not a second filter but the same one, there because date is the constraint people reach for most: the toolbar dropdown and the drawer's Date field read and write one value and produce one chip. Choosing Custom in the toolbar opens the filters drawer on Custom, where its bounds are set."
+      "defaultNote": "'All' means no date constraint and produces no filter chip. Clear all returns the group to 'All'. A radio group with nothing selected is not a valid resting state.",
+      "toolbar": "Also surfaced in the toolbar as a dropdown left of Filters, with the same presets, 'All' included. It is not a second filter but the same one, there because date is the constraint people reach for most: the toolbar dropdown and the drawer's Date field read and write one value and produce one chip. Choosing Custom in the toolbar opens the filters drawer on Custom, where its bounds are set.",
+      "rangeOrder": "Custom bounds entered in reverse are swapped in the same way (filters.amount.rangeOrder): 'From 12 November, To 1 November' filters 1 – 12 November."
     },
     {
       "id": "account",
@@ -709,8 +708,8 @@
   "filtersDrawer": {
     "trigger": "Filters",
     "apply": "Apply",
-    "reset": "Reset",
-    "behaviour": "The toolbar carries the search field, the Date dropdown (filters.date.toolbar) and a single Filters button. The button opens a right-side drawer with every entry of filters[] except search, in filters[] order. Changes inside the drawer are a draft: Apply writes them to the URL and closes the drawer; Reset clears every field in the draft and leaves the drawer open; closing with Escape, the close control or the scrim discards the draft. Active filters stay visible as removable chips below the toolbar, with Clear all.",
+    "reset": "Clear all",
+    "behaviour": "The toolbar carries the search field, the Date dropdown (filters.date.toolbar) and a single Filters button. The button opens a right-side drawer with every entry of filters[] except search, in filters[] order. Changes inside the drawer are a draft: Apply writes them to the URL and closes the drawer; Clear all (filtersDrawer.reset — the same name as the chips row's control (naming.terms)) clears every field in the draft and leaves the drawer open; closing with Escape, the close control or the scrim discards the draft. Active filters stay visible as removable chips below the toolbar, with Clear all.",
     "close": "Close"
   },
   "toolbar": {
@@ -724,7 +723,7 @@
   "search": {
     "placeholder": "Search by name, note, reference or amount",
     "scope": [
-      "counterparty name",
+      "row title (the recipient or sender, or the title of a conversion or an account-level fee)",
       "note",
       "payment reference",
       "transaction ID",
@@ -732,7 +731,7 @@
     ],
     "behaviour": "Search is a filter and produces a chip like any other, so it can be removed with 'Clear all'. Debounced at 250ms.",
     "idMatch": "A pasted transaction ID matches its transaction whatever its case and whether or not it keeps the hyphens; letters and digits are compared, from four characters up. A child fee's ID finds the payment it belongs to, since the fee is never a row of its own (feeModel).",
-    "placeholderNote": "The placeholder names what a user can type from memory — name, note, reference, amount — in search.scope order. The transaction ID is in scope too but is pasted, not recalled, so the placeholder leaves it out."
+    "placeholderNote": "The placeholder names what a user can type from memory — name, note, reference, amount — in search.scope order. The transaction ID is in scope too but is pasted, not recalled, so the placeholder leaves it out. It says 'name', not 'recipient or sender', because search matches every row's title — a conversion's or an account-level fee's as well — and those have no recipient or sender (naming.terms)."
   },
   "edgeCases": [
     {
@@ -765,7 +764,7 @@
     {
       "id": "fee_linking",
       "requirement": "A fee must be tied to its payment without flooding the list",
-      "rule": "Nested under the parent, surfaced as 'incl. {x} fee' and detailed in the breakdown. Standalone rows only for account-level fees.",
+      "rule": "Nested under the parent, surfaced on its row as the fee line (feeModel.rules[1]) and detailed in the breakdown. Standalone rows only for account-level fees.",
       "fixtures": [
         "tx_1004",
         "fee_1004a",
@@ -794,7 +793,9 @@
     "clientIdSource": "import.meta.env.VITE_BRANDFETCH_CLIENT_ID",
     "field": "counterparty.merchantDomain",
     "fallback": "Lettermark: the first letter of the counterparty name on a background chosen deterministically from the name, from the avatar palette in tokens.css. Shown while the logo loads and kept when the request fails or no domain or client id exists. A failed request never shows a broken image.",
-    "cache": "Outcomes are cached, never image bytes. In memory, per session: a domain is requested at most once, concurrent requests included. Across sessions: localStorage holds one versioned record per domain — whether it resolved, when it was checked and a signature of the URL template and client id it was checked against (a record from another configuration counts as unknown) — for seven days, after which the domain is checked again; at most 200 domains, oldest evicted first. A domain recorded as having no logo is not requested again within that time. A domain with a logo is still requested, and the browser's HTTP cache serves it, because the request URL for a merchant is stable: no size or cache-busting parameter. Only definitive answers are recorded — a timeout or a failure while offline is not. Every storage read and write fails quietly: with storage unavailable, behaviour is exactly the in-memory cache's."
+    "cache": "Outcomes are cached, never image bytes. In memory, per session: a domain is requested at most once, concurrent requests included. Across sessions: localStorage holds one versioned record per domain — whether it resolved, when it was checked and a signature of the URL template and client id it was checked against (a record from another configuration counts as unknown) — for seven days, after which the domain is checked again; at most 200 domains, oldest evicted first. A domain recorded as having no logo is not requested again within that time. A domain with a logo is still requested, and the browser's HTTP cache serves it, because the request URL for a merchant is stable: no size or cache-busting parameter. Only definitive answers are recorded: a logo that loaded, and the provider's own reply that it has none — an HTTP 404, which the fallback/404 segment (urlNote) guarantees for a brand it does not know. A failed image is not such a reply, because the browser does not say why an image failed; so after a failure the response status is asked for once, and anything other than a 404 — a refused or dropped connection, a timeout, a 5xx, a rate limit, a redirect, being offline — records nothing, and the merchant is requested again on the next visit. A network failure is not an answer about the merchant. Whether the 404 can be read at all depends on the provider: the status is read through a cross-origin request, so it is visible only if the provider's 404 response carries an Access-Control-Allow-Origin header. If it does, the 404 is stored and the merchant is not requested again for seven days; if it does not, the request is unreadable, nothing is stored and the merchant is requested again on the next visit. Both outcomes are correct — neither stores a failure as an answer — but see cacheVerification for which of them has been observed. Every storage read and write fails quietly: with storage unavailable, behaviour is exactly the in-memory cache's.",
+    "cacheVerification": "Measured and assumed, kept apart. MEASURED, with mocked provider responses in headless Chromium: a readable 404 is stored and makes no request on the second visit; a refused or reset connection, a 500, a 429, a redirect and a timeout store nothing and are requested again. NOT VERIFIED against the live API: that the provider's real 404 is readable cross-origin. The only live observation is indirect — a request without a client id was answered with a redirect carrying Access-Control-Allow-Origin: * — and the mocks pass the cross-origin check regardless, so they prove nothing about it. Until an unknown domain is loaded once on the deployed build, the stored-404 path is designed and tested in isolation but unobserved in production; the path that is certain to hold is the other one, where nothing is stored and a missing logo is simply re-requested each visit.",
+    "verification": "Verified manually, in a normal browser, on the deployed build at unlimit-test.netlify.app: real merchant logos load — Stripe, Upwork, Hostinger and Octopus Energy among them. Headless browsers never see them: the provider refuses headless user agents and redirects them to its hotlinking guidelines, so every capture from scripts/capture-states.mjs, and every automated audit, shows the lettermark fallback. That is the provider's behaviour and the fallback path working, not a defect: a screenshot full of lettermarks is not evidence of a broken integration."
   },
   "prototypeAffordances": {
     "note": "This bar is prototype scaffolding, not product UI. It exists so a reviewer can verify the stated desktop range and the colour-independence of statuses without resizing a window or editing a screenshot. It is visually distinct from the product and is suppressed in captures — except stub notices, which mark a stub's limit and stay (prototypeAffordances.stubRule).",
@@ -811,7 +812,7 @@
     "stubNotice": "Not implemented in this prototype",
     "greyscaleActive": "Greyscale on",
     "greyscalePlacement": "The greyscale control and its hint live on the States index, not in the bar. It sets ?grey=1, which every index link and every in-app navigation carries, so the mode holds across routes and can be shared as a link. While it is on — and only then — the bar shows one scaffolding chip reading greyscaleActive, which turns it off from any route. With it off, the bar says nothing about greyscale. Under ?chrome=off the control is removed with the rest of the scaffolding; ?grey=1 still applies by URL.",
-    "stubRule": "A stub is allowed where the control belongs to the screen's information architecture and its limit is stated on use — it shows stubNotice when activated. It is not allowed where the control cannot be reached at all, which is why Back to top was removed (listBehaviour.pagination): a control that cannot be reached teaches the reviewer nothing. Current stubs: toolbar.download (Download statement), states.details.repeatAction, and the status actions in the details panel (statuses[].primaryAction and secondaryAction). Every stub notice stays for stubNoticeMs, then clears itself.",
+    "stubRule": "A stub is allowed where the control belongs to the screen's information architecture and its limit is stated on use — it shows stubNotice when activated. It is not allowed where the control cannot be reached at all, which is why Back to top was removed (listBehaviour.pagination): a control that cannot be reached teaches the reviewer nothing. Current stubs: toolbar.download (Download statement), states.details.repeatAction, the status actions in the details panel (statuses[].primaryAction and secondaryAction), and the two block-state actions that lead out of this screen — states.empty.copy.primaryAction (Make a transfer) and states.error.copy.secondaryActionAfterSecondFailure (Contact support). Every stub notice stays for stubNoticeMs, then clears itself.",
     "stubNoticeMs": 6000,
     "widthLabelUse": "The accessible name (aria-label) of the width group. The bar shows no visible 'Width' label and no 'Prototype controls' heading; label remains the bar region's accessible name.",
     "barLayout": "Three zones: the greyscale chip at the left, only while greyscale is on; the width switcher centred in the bar, never shifting when the chip appears; the States index link at the right, followed by a right-pointing arrow.",
@@ -819,7 +820,8 @@
   },
   "deferred": {
     "tablet": "Below 1280px nothing is built: the brief scopes this to desktop 1280px+. The drawer behaviour now used below 1440px is the likely starting point.",
-    "pagination": "Deferred, see listBehaviour.pagination."
+    "pagination": "Deferred, see listBehaviour.pagination.",
+    "shortViewport": "Known limit, recorded and not fixed. The details panel pins its header (with the status block and helper line) and its action footer, and only the body between them scrolls, so a short window takes its height out of the body. Measured in the persistent column at a 1440 frame, body height for the tallest header (tx_1005: three-step timeline open plus a two-line reason) and for the longest fixture (tx_1007): at 900px tall 316 and 328px — comfortable, about seven Details rows in view; at 768px 184 and 196px — usable, about four rows; at 720px 136 and 148px; at 640px 56 and 68px, which is one row and not usable. The 1280 drawer has the full window height and fares better: 410 and 422px at 900, 278 and 290px at 768, 150 and 162px at 640. Measured in headless Chromium against this build. Below meta.minHeight the likely fix is to let the header's status block scroll with the body; it is not built."
   },
   "accounts": [
     {
@@ -869,6 +871,7 @@
         "logo": false,
         "initials": "KW",
         "iban": "PL61 1090 1014 0000 0712 1981 2874",
+        "bank": "Santander Bank Polska",
         "merchantDomain": ""
       },
       "amount": -890.0,
@@ -1158,6 +1161,7 @@
         "logo": false,
         "initials": "MK",
         "iban": "PL10 1050 0099 7603 1234 5678 9123",
+        "bank": "ING Bank Śląski",
         "merchantDomain": ""
       },
       "amount": -600.0,
@@ -1231,6 +1235,7 @@
         "logo": false,
         "initials": "KW",
         "iban": "PL61 1090 1014 0000 0712 1981 2874",
+        "bank": "Santander Bank Polska",
         "merchantDomain": ""
       },
       "amount": -890.0,
@@ -1313,7 +1318,7 @@
     }
   ],
   "expectedDayTotals": {
-    "note": "Computed under the countsInDayTotal rule: only Completed counts, a child fee is already inside its parent and never added again, and a conversion contributes its debit in the source currency and its credit in the target currency. Within a header, currencies follow the order of accounts[] — EUR, GBP, USD. The state auditor checks the rendered headers against these. 'scoped' carries the expectation under each single-account scope (listBehaviour.groupHeaderExtra.narrowing): only that account's movements count, and a conversion contributes only its leg on the scoped account. A day with no transaction in scope has no header at all and is absent. 'currencyFiltered' carries the expectation under each single-currency filter (?currency=EUR, GBP, USD), by the same narrowing rule: only movements in that currency count, so a conversion contributes only its matching leg.",
+    "note": "Computed under the countsInDayTotal rule: only Completed counts, a child fee is already inside its parent and never added again, and a conversion contributes its debit in the source currency and its credit in the target currency. Within a header, currencies follow the order of accounts[] — EUR, GBP, USD. The state auditor checks the rendered headers against these. 'scoped' carries the expectation under each single-account scope (listBehaviour.groupHeaderExtra.narrowing): only that account's movements count, and a conversion contributes only its leg on the scoped account. A day with no transaction in scope has no header at all and is absent. 'currencyFiltered' carries the expectation under each single-currency filter (?currency=EUR, GBP, USD), by the same narrowing rule: only movements in that currency count, so a conversion contributes only its matching leg. 'scopedAndCurrencyFiltered' carries the combined case (?account= with ?currency=), under the one-leg rule of listBehaviour.groupHeaderExtra.narrowing: a key lists the expected headers; an empty object means no transaction is in the filtered set, so no day header renders and the no-results block shows.",
     "2026-11-14": "+4,292.50 EUR",
     "2026-11-13": "−2,007.40 EUR · +1,686.40 GBP",
     "2026-11-12": "+928.80 EUR · −142.67 GBP",
@@ -1377,6 +1382,17 @@
         "2026-11-05": "+6,800.00 USD",
         "2026-10-28": "+937.55 USD"
       }
+    },
+    "scopedAndCurrencyFiltered": {
+      "acc_gbp+GBP": {
+        "2026-11-13": "+1,686.40 GBP",
+        "2026-11-12": "−142.67 GBP",
+        "2026-11-05": "+2,400.00 GBP",
+        "2026-11-03": "−48.20 GBP",
+        "2026-10-25": "+150.00 GBP"
+      },
+      "acc_gbp+EUR": {},
+      "acc_eur+GBP": {}
     }
   },
   "qaChecklist": [
@@ -1399,8 +1415,8 @@
     "Every width in prototypeAffordances.widths, and Full width, renders without horizontal body scroll and without row overflow.",
     "The greyscale toggle leaves the four marked statuses distinguishable from each other and from unmarked Completed rows, and tx_1007 unbroken at 1280.",
     "Below 1440px the details drawer opens on row click with a scrim, closes with Escape, the close control and a scrim click, and returns focus to the originating row.",
-    "A failed or missing logo renders the lettermark, never a broken image, and no merchant is requested twice.",
-    "Filters change only on Apply; Reset clears the drawer without applying; closing the drawer discards the draft.",
+    "A failed or missing logo renders the lettermark, never a broken image, and no merchant's image is requested twice in a session; a failed image is followed by at most one status request (logos.cache).",
+    "Filters change only on Apply; Clear all in the drawer clears the draft without applying; closing the drawer discards the draft.",
     "A selected transaction that leaves the visible set is replaced at 1440+ and dismissed below 1440; no filter combination leaves a hidden transaction open.",
     "Default selection on load moves no focus; the first Tab reaches the page title region, not a row.",
     "With the logo API key unset and with the network blocked, every row renders its fallback with no broken image and no layout shift.",
@@ -1408,7 +1424,7 @@
     "Completed rows show no status icon and no status label; the row's accessible name still includes 'Completed'.",
     "Under a single-account scope, day totals count only that account's movements, including for conversions.",
     "'All accounts' is selectable from the dropdown at any time.",
-    "Every copyableFields entry present on the transaction has exactly one copy control in the panel, and no other field has one; all are permanently visible and keyboard-reachable.",
+    "Every row that copyableFields.rule gives a copy control has exactly one, and no other row has one: From and To on every transaction, conversions and account-level fees included; Payment reference, Recipient or sender, IBAN and Transaction ID wherever they render. All are permanently visible and keyboard-reachable.",
     "The status accordion opens by default for every status except Completed.",
     "Download statement is a single control with no menu, reachable by keyboard; activating it by pointer or keyboard shows the stub notice beside it, and nothing downloads.",
     "Under a currency filter, day totals count only the matching leg of a conversion.",
@@ -1419,13 +1435,13 @@
     "The three dropdowns share one visual language and differ only in their semantics.",
     "None of the three escapes the application frame or covers the prototype bar.",
     "Greyscale set on the States index applies on every route, is visible in the URL, and can be turned off from any route.",
-    "A second visit makes no network request for a merchant whose logo was already known to be missing.",
+    "A second visit makes no network request for a merchant whose logo was already known to be missing. Verified with a mocked 404 only; against the live provider this is unverified (logos.cacheVerification).",
     "With localStorage unavailable, logo loading and fallbacks behave exactly as they do with it.",
     "The account and date controls in the toolbar and in the drawer always show the same value; changing either updates the other.",
     "The rule under the toolbar appears only when a filter is active.",
     "Payment reference is read-only; Note is editable, and editing it changes no other field.",
-    "Every fixture has a unique displayId, rendered in the panel and findable through search.",
-    "No internal fixture key appears anywhere in the UI.",
+    "Every fixture has a unique displayId. Each top-level transaction's is rendered in its panel and findable through search; a child fee has no panel of its own (feeModel), so its displayId is findable through search only, where it returns its parent (search.idMatch).",
+    "No internal fixture key appears on any product route. The States index is reviewer scaffolding and prints routes and rule text that name fixture ids (states_index.behaviour).",
     "Selecting an account alone narrows the list and shows no chip, no 'Clear all', no result count and no rule; with a filter or search active the count reads within the selected account.",
     "Scrolling collapses the heading and pins it above the search row; no column width changes and no row re-truncates during the transition.",
     "Under prefers-reduced-motion the heading changes state without animating.",
@@ -1435,7 +1451,28 @@
     "The filters drawer lists filters in filters[] order (Recipient or sender, Amount, Date, Account, Status, Type, Currency), and the chips row renders active filters in the same order, independent of the order they were applied.",
     "The amount inputs show 'From' and 'To' as placeholders, with no visible label above them; each input's accessible name is its filters.amount.fieldLabels value; an arrow sits between the two inputs.",
     "The details panel header puts the status badge on the avatar's line, aligned right — in the drawer left of the close control, without touching it; the amount, the counterparty and the current step follow beneath, in that order, at 1280 (drawer), 1440 and Full width.",
-    "The row meta line shows the note where the transaction has one and nothing in its place where it does not; the payment reference never appears in a row, and search still finds a transaction by its reference."
+    "The row meta line shows the note where the transaction has one and nothing in its place where it does not; the payment reference never appears in a row, and search still finds a transaction by its reference.",
+    "A failed payment's timeline is Created then Failed — two steps, as Cancelled's is — and no step on it says the money was sent.",
+    "At 1440px and above, on a route that has rows, the list column is the same width while loading as after the data arrives; the skeleton never spans the panel column. A route that resolves to no rows (no-results) collapses the column once loading ends, as defaultSelection.noResults says.",
+    "Repeat appears on outgoing payments only — not on incoming money, a conversion or an account-level fee — and not while a payment is In progress.",
+    "Details has no Date and time row on any transaction; the date and time are in the pinned header's status block (sections[details].dateTimeInHeader). Details shows IBAN and Bank only where the fixture carries them; tx_1002 shows both.",
+    "A date or amount range entered in reverse is applied in order: the chip reads low – high and the list is not empty because of the order.",
+    "The Recipient or sender list offers third parties only: no conversion title and no account-level fee.",
+    "The selected row carries a bar at its leading edge in both panel modes and stays identifiable in the greyscale render.",
+    "Each naming.terms entry is the only name for its concept on every product route: no 'Reset', 'Get help', bare 'Download', 'Account number' or 'Name' label remains. The States index quotes edgeCases[].requirement in the brief's wording and is outside this item.",
+    "A URL carrying a malformed date bound, an unknown status, type or currency, or a preset beside custom bounds renders the list without that value: no crash, no chip printing the raw word, never two Date chips.",
+    "The Recipient or sender filter never returns a conversion or an account-level fee, whatever is typed or put in the URL.",
+    "The panel shows at most one primary button and it follows statuses[].repeat: Repeat is primary on Failed and Cancelled, secondary on Rejected and on Completed (beside the primary Download confirmation), and absent on In progress; Rejected shows no primary button.",
+    "The copy control on From or To puts the named party's IBAN on the clipboard where there is one (never an account label) and the displayed value where there is not, and its accessible name says which: 'Copy from IBAN' / 'Copy to IBAN' for an IBAN, 'Copy from' / 'Copy to' for the value.",
+    "A logo request that fails for any reason other than the provider's 404 — refused connection, 5xx, timeout — stores nothing and is requested again on the next visit; a 404 is stored and not requested again within its seven days. The 404 half is verified with mocked responses only (logos.cacheVerification).",
+    "The helper line sits directly beneath the status block inside the pinned header and stays in view while the panel body scrolls, at 1280 (drawer) and 1440 (column).",
+    "The page title and the document title read 'Transactions', the sidebar item's name.",
+    "The loading skeleton reads as a placeholder, lighter than any text or control outline; the loading state is announced through the polite live region carrying states.loading.copy.ariaLive, on first load and on Try again.",
+    "Opening the Recipient or sender list empties the field and shows the current value as the placeholder; typing narrows the full list; Tab commits the highlighted option, or the typed text when nothing is highlighted; closing without a choice restores the previous value; reopening on a selection far down shows it whole without cutting the first visible option.",
+    "Collapsed, the status block shows the current step's label with its date and time on the line beneath; expanded steps are unchanged.",
+    "Hovering an option never moves the keyboard highlight: after typing, resting the pointer on another option and pressing Tab or Enter commits the highlighted option (or the typed text), not the hovered one; aria-activedescendant follows the keyboard only, and hover has its own treatment.",
+    "Every option in the three dropdowns is one line and one height; a long name ends in an ellipsis with the full value in its title.",
+    "Under an account scope plus a currency filter, a transaction appears only if one of its legs passes both: ?account=acc_gbp&currency=EUR shows no tx_1003 row and no 13 November header (expectedDayTotals.scopedAndCurrencyFiltered); headers and rows never disagree."
   ],
   "dropdowns": {
     "members": [
@@ -1444,6 +1481,7 @@
       "filters.counterparty"
     ],
     "appearance": "The three dropdowns share one popover surface, option rows, selection indicator, keyboard behaviour and focus treatment. Their triggers may differ by prominence — a borderless trigger beside a heading, a bordered control in a toolbar or a form — because the trigger belongs to its context and the list belongs to the system.",
+    "optionRows": "Every option is one line, in all three dropdowns, so rows are one height. A long value ends in an ellipsis and carries its full text in the native title, as the transaction row's title does (edgeCases.long_counterparty). Nothing is lost: a user looking for a long name types a few letters rather than reading the whole string in a list. Hover and the keyboard highlight are distinct in all three (filters.counterparty.openBehaviour): hover is a fill, the keyboard highlight a fill and the inset ring, and only the keyboard highlight is committed by Enter.",
     "semantics": {
       "accountScope": "A single-choice listbox: selecting changes what the page shows.",
       "filters.date (toolbar)": "A single-choice listbox over filters.date.presets.",
@@ -1451,5 +1489,15 @@
     },
     "containment": "Each surface is contained by the application frame and never covers the prototype bar; stacking uses the z-index tokens."
   },
-  "fixturesNote": "qaNote on a fixture documents what it covers and is never shown. reference is a payment reference — short, transactional, passed through by the bank; note is the account holder's private text. tx_1003, tx_1009, tx_1010, tx_1019 and tx_1024 carry no reference; tx_1003 and tx_1009 carry neither. id is the internal key and the ?tx= URL parameter, never shown. displayId is the identifier people read and quote: TXN- and three groups of four characters from an alphabet without look-alikes (no 0/O, 1/I/L), written here once and never derived at runtime. Every fixture has one and no two are equal."
+  "fixturesNote": "qaNote on a fixture documents what it covers and is never shown. reference is a payment reference — short, transactional, passed through by the bank; note is the account holder's private text. tx_1003, tx_1009, tx_1010, tx_1019 and tx_1024 carry no reference; tx_1003 and tx_1009 carry neither. id is the internal key and the ?tx= URL parameter, never shown. displayId is the identifier people read and quote: TXN- and three groups of four characters from an alphabet without look-alikes (no 0/O, 1/I/L), written here once and never derived at runtime. Every fixture has one and no two are equal. counterparty.iban and counterparty.bank are the recipient details; a fixture carries them only where they are on record (tx_1002, tx_1016 and tx_1020 carry both, tx_1005 an IBAN alone), and the panel omits what is absent rather than inventing it.",
+  "naming": {
+    "rule": "One concept has one name, in every control and label.",
+    "terms": {
+      "Clear all": "Removing every filter: the chips row, the filters drawer (filtersDrawer.reset) and the no-results block all use it. Not 'Reset', not 'Clear all filters'. One name, two scopes that follow from where the control sits: in the chips row and the no-results block it applies at once and removes the search chip too; in the drawer it clears the draft, which takes effect on Apply like every other drawer change, and leaves search alone, because search is not in the drawer.",
+      "Contact support": "The route to a person: the status secondaryAction and the error state's second-failure action. Not 'Get help'.",
+      "Download statement / Download confirmation": "Two documents, two names. The toolbar exports the history on screen as a statement; the panel's action exports one completed transaction's confirmation. Neither is a bare 'Download'.",
+      "IBAN": "The counterparty's account identifier, which in every fixture is an IBAN. 'Account' alone always means one of the user's own accounts (accountScope, filters.account).",
+      "Recipient or sender": "The third party of a transaction: the filter, the Details row and the copy control's name. Not 'Name' as a label, not 'counterparty', which stays an internal word. The search placeholder's lower-case 'name' is a different thing — any row's title (search.placeholderNote). The States index quotes edgeCases[].requirement, which keeps the brief's own wording ('counterparty'); that page is reviewer scaffolding, not product copy."
+    }
+  }
 }
